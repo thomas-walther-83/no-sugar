@@ -106,6 +106,9 @@
   .wk-num.good { color: var(--accent-green); }
 
   .pending-banner { background: var(--accent-amber-soft); color: var(--accent-amber); border-radius: 14px; padding: 14px 16px; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; cursor: pointer; text-align: center; }
+  .mile-card { background: var(--accent-green-soft); color: var(--accent-green); border-radius: 14px; padding: 13px 16px; font-size: 0.88rem; font-weight: 500; margin-bottom: 14px; text-align: center; }
+  .cal-cell { position: relative; }
+  .cal-cell .note-dot { position: absolute; bottom: 3px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.65; }
 
   .seg-row { display: flex; gap: 6px; background: var(--bg-sunken); border-radius: 12px; padding: 4px; }
   .seg-btn { flex: 1; text-align: center; padding: 9px 0; border-radius: 9px; font-size: 0.86rem; font-weight: 500; color: var(--text-muted); }
@@ -141,8 +144,12 @@
   .badge-pop { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-amber-soft); color: var(--accent-amber); border-radius: 12px; padding: 10px 14px; margin-top: 12px; font-size: 0.88rem; font-weight: 600; }
 
   .tab-row { display: flex; gap: 6px; background: var(--bg-sunken); border-radius: 12px; padding: 4px; margin: 4px 0 18px; }
-  .tab-btn { flex: 1; text-align: center; padding: 9px 0; border-radius: 9px; font-size: 0.86rem; font-weight: 500; color: var(--text-muted); }
+  .tab-btn { flex: 1; text-align: center; padding: 9px 2px; border-radius: 9px; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); }
   .tab-btn.active { background: var(--bg-elevated); color: var(--text); font-weight: 600; }
+  .bilanz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+  .bilanz-num { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 600; }
+  .bilanz-num small { font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+  .bilanz-num.good { color: var(--accent-green); }
 
   .range-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .range-btn { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; color: var(--text-muted); border: 1px solid var(--border); }
@@ -332,7 +339,8 @@
     activeDate: null,   // date currently being entered/edited (defaults to today)
     draft: null,
     lastResult: null,
-    note: null
+    note: null,
+    animatedStreak: false
   };
 
   function persistSettings() { if (state.settings) putRec('meta', { key: 'settings', value: state.settings }); }
@@ -593,12 +601,20 @@
 
     wrap.appendChild(el(
       '<div class="stat-grid">' +
-        '<div class="stat-cell"><div class="label">Aktuelle Serie</div><div class="num fire">' + streaks.current + (streaks.current===1?' Tag':' Tage') + '</div></div>' +
+        '<div class="stat-cell"><div class="label">Aktuelle Serie</div><div class="num fire">🔥 <span id="streak-num">' + streaks.current + '</span>' + (streaks.current===1?' Tag':' Tage') + '</div></div>' +
         '<div class="stat-cell"><div class="label">Beste Serie</div><div class="num">' + streaks.best + (streaks.best===1?' Tag':' Tage') + '</div></div>' +
         '<div class="stat-cell"><div class="label">Zuckerfreie Tage total</div><div class="num">' + streaks.totalSugarFree + '</div></div>' +
         '<div class="stat-cell"><div class="label">Punkte</div><div class="num">' + computePoints() + '</div></div>' +
       '</div>'
     ));
+
+    // Milestone preview / restart encouragement
+    var mile = nextStreakMilestone(streaks.current);
+    if (streaks.current === 0 && Object.keys(state.entries).length > 0) {
+      wrap.appendChild(el('<div class="mile-card">🌱 Neuanfang — heute zählt wieder. Ein Tag nach dem anderen.</div>'));
+    } else if (mile) {
+      wrap.appendChild(el('<div class="mile-card">🔥 Noch ' + mile.remaining + (mile.remaining===1?' Tag':' Tage') + ' bis zur ' + mile.label + '.</div>'));
+    }
 
     // Weekly review (last 7 days incl. today)
     var wk = weeklyReview();
@@ -617,7 +633,37 @@
     if (!hasToday) wrap.appendChild(el('<div class="pending-banner" data-action="go-checkin">📝 Heutiger Check-in steht noch aus — jetzt erfassen</div>'));
     wrap.appendChild(el('<button class="cta-btn ' + (hasToday?'done':'') + '" data-action="go-checkin">' + (hasToday?'Heute bereits erfasst — bearbeiten':'Heutiger Check-in') + '</button>'));
     if (Object.keys(state.entries).length === 0) wrap.appendChild(el('<div class="empty-note">Noch keine Einträge. Der erste Check-in dauert unter 15 Sekunden.</div>'));
+    if (!state.animatedStreak && streaks.current > 0) {
+      state.animatedStreak = true;
+      setTimeout(function(){ countUp('streak-num', streaks.current); }, 60);
+    }
     return wrap;
+  }
+
+  function prefersReducedMotion() {
+    try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) { return false; }
+  }
+  function countUp(id, to) {
+    var e = document.getElementById(id); if (!e) return;
+    if (prefersReducedMotion() || to <= 1) { e.textContent = to; return; }
+    var dur = 650, start = null;
+    function tick(ts) {
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      e.textContent = Math.round((1 - Math.pow(1-p, 3)) * to);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    e.textContent = '0';
+    requestAnimationFrame(tick);
+  }
+
+  function nextStreakMilestone(current) {
+    var targets = [];
+    STREAK_ACH.forEach(function(n){ targets.push({ v:n, label: n + '-Tage-Serie' }); });
+    WEEK_ACH.forEach(function(w){ targets.push({ v:w.d, label: w.l + '-Serie' }); });
+    targets.sort(function(a,b){ return a.v - b.v; });
+    for (var i=0;i<targets.length;i++) { if (targets[i].v > current) return { target: targets[i].v, remaining: targets[i].v - current, label: targets[i].label }; }
+    return null;
   }
 
   function weeklyReview() {
@@ -711,13 +757,57 @@
         '<button class="tab-btn ' + (state.progressTab==='weight'?'active':'') + '" data-action="ptab" data-val="weight">Gewicht</button>' +
         '<button class="tab-btn ' + (state.progressTab==='calendar'?'active':'') + '" data-action="ptab" data-val="calendar">Zuckerfrei</button>' +
         '<button class="tab-btn ' + (state.progressTab==='mood'?'active':'') + '" data-action="ptab" data-val="mood">Stimmung</button>' +
+        '<button class="tab-btn ' + (state.progressTab==='bilanz'?'active':'') + '" data-action="ptab" data-val="bilanz">Bilanz</button>' +
       '</div>'
     ));
     var body = document.createElement('div');
     if (state.progressTab === 'weight') body.appendChild(renderWeightChart());
     else if (state.progressTab === 'calendar') body.appendChild(renderCalendar());
-    else body.appendChild(renderMoodTimeline());
+    else if (state.progressTab === 'mood') body.appendChild(renderMoodTimeline());
+    else body.appendChild(renderBilanz());
     wrap.appendChild(body);
+    return wrap;
+  }
+
+  function periodStats(from, to) {
+    var ds = sortedDates().filter(function(d){ return d >= from && d <= to; });
+    var total = ds.length, sugarFree = 0, best = 0, run = 0, prev = null;
+    var weighted = ds.filter(function(d){ return state.entries[d].weight != null; });
+    ds.forEach(function(d) {
+      if (state.entries[d].sugarFree === true) {
+        sugarFree++;
+        if (prev && addDays(prev,1) === d) run++; else run = 1;
+        if (run > best) best = run;
+      } else if (state.entries[d].sugarFree === false) { run = 0; }
+      prev = d;
+    });
+    var net = null;
+    if (weighted.length >= 2) net = state.entries[weighted[weighted.length-1]].weight - state.entries[weighted[0]].weight;
+    var quote = total > 0 ? Math.round(sugarFree / total * 100) : 0;
+    return { total: total, sugarFree: sugarFree, best: best, net: net, quote: quote };
+  }
+
+  function summaryCard(title, from, to) {
+    var s = periodStats(from, to);
+    if (s.total === 0) return '<div class="card"><div class="label" style="margin-bottom:6px;">'+title+'</div><div class="fs">Noch keine Einträge in diesem Zeitraum.</div></div>';
+    return '<div class="card">' +
+      '<div class="label" style="margin-bottom:12px;">'+title+'</div>' +
+      '<div class="bilanz-grid">' +
+        '<div class="bilanz-cell"><div class="bilanz-num">'+s.quote+'<small>%</small></div><div class="fs">zuckerfrei</div></div>' +
+        '<div class="bilanz-cell"><div class="bilanz-num">'+s.sugarFree+'<small>/'+s.total+'</small></div><div class="fs">Tage erfasst</div></div>' +
+        '<div class="bilanz-cell"><div class="bilanz-num">'+s.best+'</div><div class="fs">beste Serie</div></div>' +
+        '<div class="bilanz-cell"><div class="bilanz-num ' + (s.net!=null&&s.net<0?'good':'') + '">'+(s.net!=null?((s.net>0?'+':'')+s.net.toFixed(1)):'—')+'<small> kg</small></div><div class="fs">Netto-Gewicht</div></div>' +
+      '</div></div>';
+  }
+
+  function renderBilanz() {
+    var wrap = document.createElement('div');
+    var now = new Date(), y = now.getFullYear(), m = now.getMonth();
+    var mFrom = fmtDate(new Date(y, m, 1)), mTo = fmtDate(new Date(y, m+1, 0));
+    var yFrom = y + '-01-01', yTo = y + '-12-31';
+    wrap.appendChild(el(summaryCard('Dieser Monat · ' + MONTHS_DE[m] + ' ' + y, mFrom, mTo)));
+    wrap.appendChild(el(summaryCard('Dieses Jahr · ' + y, yFrom, yTo)));
+    wrap.appendChild(el(summaryCard('Gesamt', '0000-01-01', '9999-12-31')));
     return wrap;
   }
   /* Shared line chart with Y-axis labels. opts:
@@ -850,7 +940,8 @@
       for (var i=0;i<startOffset;i++) html += '<div class="cal-cell blank"></div>';
       for (var day=1;day<=daysInMonth;day++) {
         var ds = fmtDate(new Date(y,m,day)), cls = 'cal-cell ' + cellClassFor(ds), tappable = ds <= today;
-        html += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'" style="cursor:pointer;"' : ' style="opacity:0.4;"') + '>'+day+'</div>';
+        var e = state.entries[ds], noteDot = (e && e.note) ? '<span class="note-dot"></span>' : '';
+        html += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'" style="cursor:pointer;"' : ' style="opacity:0.4;"') + '>'+day+noteDot+'</div>';
       }
       grid.innerHTML = html;
     }, 0);
