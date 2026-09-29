@@ -185,12 +185,53 @@
   .back-row { display:flex; align-items:center; margin: 4px 0 14px; }
   .back-row button { font-size: 0.9rem; color: var(--text-muted); padding: 4px 0; }
 
+  /* chart axis + target line */
+  .chart-wrap { position: relative; }
+  .chart-caption { display:flex; justify-content:space-between; margin-top:10px; font-size:0.76rem; color:var(--text-muted); }
+  .chart-legend { display:flex; gap:16px; margin-top:10px; font-size:0.76rem; color:var(--text-muted); align-items:center; }
+  .chart-legend .ln { width:16px; height:0; border-top:2px solid var(--accent-green); display:inline-block; margin-right:6px; vertical-align:middle; }
+  .chart-legend .ln.dashed { border-top:2px dashed var(--accent-amber); }
+
+  /* year heatmap */
+  .hm-scroll { overflow-x:auto; padding-bottom:6px; }
+  .hm-grid { display:grid; grid-auto-flow:column; grid-template-rows:repeat(7, 12px); gap:3px; }
+  .hm-cell { width:12px; height:12px; border-radius:3px; background:var(--bg-sunken); }
+  .hm-cell.yes { background:var(--accent-green); }
+  .hm-cell.no { background:var(--accent-red); }
+  .hm-cell.future { background:transparent; }
+  .hm-months { display:flex; gap:0; margin-bottom:6px; font-size:0.62rem; color:var(--text-faint); }
+
+  /* mini-months for quarter view */
+  .mini-months { display:grid; grid-template-columns:1fr; gap:14px; }
+  .mini-title { font-size:0.86rem; font-weight:600; margin-bottom:8px; }
+  .mini-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .mini-cell { aspect-ratio:1; border-radius:6px; background:var(--bg-sunken); display:flex; align-items:center; justify-content:center; font-size:0.62rem; color:var(--text-muted); }
+  .mini-cell.yes { background:var(--accent-green); color:#fff; }
+  .mini-cell.no { background:var(--accent-red); color:#fff; }
+  .mini-cell.blank { background:transparent; }
+
+  /* celebration overlay */
+  #celebrate-layer { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(20,26,22,0.55); backdrop-filter: blur(3px); padding: 30px; }
+  #celebrate-layer.show { display: flex; }
+  .celebrate-card { background: var(--bg-elevated); border-radius: 24px; padding: 34px 28px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,0.28); animation: pop-in 0.5s cubic-bezier(.2,1.1,.4,1) both; }
+  .celebrate-card .emoji { font-size: 3.4rem; animation: badge-bounce 0.9s ease 0.15s both; }
+  .celebrate-card h2 { font-size: 1.5rem; margin: 12px 0 4px; }
+  .celebrate-card p { color: var(--text-muted); font-size: 0.95rem; margin: 0 0 20px; }
+  .celebrate-card button { background: var(--accent-green); color: #F6F4EE; border-radius: 12px; padding: 13px 28px; font-weight: 600; font-size: 0.95rem; }
+  @keyframes pop-in { from { opacity: 0; transform: scale(0.8) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes badge-bounce { 0%{transform:scale(0.4) rotate(-12deg);} 55%{transform:scale(1.18) rotate(6deg);} 100%{transform:scale(1) rotate(0);} }
+  .badge-pop { animation: badge-bounce 0.7s ease both; }
+  @media (prefers-reduced-motion: reduce) {
+    .celebrate-card, .celebrate-card .emoji, .badge-pop { animation: none !important; }
+  }
+
   #boot { display: flex; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; color: var(--text-faint); font-size: 0.9rem; }
 </style>
 </head>
 <body>
 <div id="app"><div id="boot">Lade…</div></div>
 <div id="confetti-layer"></div>
+<div id="celebrate-layer"><div class="celebrate-card" id="celebrate-card"></div></div>
 
 <script>
 (function(){
@@ -257,6 +298,8 @@
     view: 'home',
     progressTab: 'weight',
     weightRange: 30,
+    sugarView: 'month',   // month | quarter | year
+    moodRange: 30,
     calMonth: new Date().getMonth(),
     calYear: new Date().getFullYear(),
     activeDate: null,   // date currently being entered/edited (defaults to today)
@@ -432,6 +475,19 @@
     })(i);
   }
 
+  function showCelebration(ach) {
+    var layer = document.getElementById('celebrate-layer');
+    var card = document.getElementById('celebrate-card');
+    if (!layer || !card) return;
+    card.innerHTML = '<div class="emoji">' + (ach.category==='weight' ? '🎉' : '🏆') + '</div>' +
+      '<h2>' + ach.title + '</h2>' +
+      '<p>Weiter so — das hast du dir verdient.</p>' +
+      '<button data-action="close-celebrate">Weiter</button>';
+    layer.classList.add('show');
+    fireConfetti();
+  }
+  function hideCelebration() { var l = document.getElementById('celebrate-layer'); if (l) l.classList.remove('show'); }
+
   /* ==========================================================
      RENDER
      ========================================================== */
@@ -578,6 +634,51 @@
     wrap.appendChild(body);
     return wrap;
   }
+  /* Shared line chart with Y-axis labels. opts:
+     data: [{label, v}], min, max, yTicks:[{v,label}], target:{v,label}|null,
+     color, fmt(v), xLabels:{left,right} */
+  function buildLineChart(opts) {
+    var W = 340, H = 190, L = 40, R = 14, T = 14, B = 24;
+    var iw = W - L - R, ih = H - T - B;
+    var min = opts.min, max = opts.max, n = opts.data.length;
+    function yPix(v) { return T + (1 - (v - min) / (max - min)) * ih; }
+    function xPix(i) { return L + (n <= 1 ? iw/2 : (i / (n - 1)) * iw); }
+    var svg = '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    // gridlines + y labels
+    opts.yTicks.forEach(function(t) {
+      var y = yPix(t.v).toFixed(1);
+      svg += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/>';
+      svg += '<text x="'+(L-6)+'" y="'+(parseFloat(y)+3.5).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text-faint)" font-family="Inter,sans-serif">'+t.label+'</text>';
+    });
+    // target line
+    if (opts.target && opts.target.v >= min && opts.target.v <= max) {
+      var ty = yPix(opts.target.v).toFixed(1);
+      svg += '<line x1="'+L+'" y1="'+ty+'" x2="'+(W-R)+'" y2="'+ty+'" stroke="var(--accent-amber)" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      svg += '<text x="'+(W-R)+'" y="'+(parseFloat(ty)-4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--accent-amber)" font-family="Inter,sans-serif">'+opts.target.label+'</text>';
+    }
+    // area + line
+    var pts = opts.data.map(function(d, i) { return xPix(i).toFixed(1) + ',' + yPix(d.v).toFixed(1); });
+    if (n >= 2) {
+      var area = 'M'+xPix(0).toFixed(1)+','+(T+ih).toFixed(1)+' L'+pts.join(' L')+' L'+xPix(n-1).toFixed(1)+','+(T+ih).toFixed(1)+' Z';
+      svg += '<path d="'+area+'" fill="'+opts.color+'" opacity="0.10"/>';
+      svg += '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+opts.color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+    opts.data.forEach(function(d, i) { svg += '<circle cx="'+xPix(i).toFixed(1)+'" cy="'+yPix(d.v).toFixed(1)+'" r="2.4" fill="'+opts.color+'"/>'; });
+    svg += '</svg>';
+    return svg;
+  }
+
+  function niceTicks(min, max, count) {
+    var span = max - min, step = span / count;
+    var mag = Math.pow(10, Math.floor(Math.log(step)/Math.LN10));
+    var norm = step / mag, nice;
+    if (norm < 1.5) nice = 1; else if (norm < 3) nice = 2; else if (norm < 7) nice = 5; else nice = 10;
+    step = nice * mag;
+    var start = Math.ceil(min/step)*step, ticks = [];
+    for (var v = start; v <= max + 1e-9; v += step) ticks.push(Math.round(v*10)/10);
+    return ticks;
+  }
+
   function renderWeightChart() {
     var wrap = document.createElement('div');
     wrap.appendChild(el(
@@ -592,51 +693,153 @@
     var card = document.createElement('div'); card.className = 'card';
     if (ds.length < 2) { card.innerHTML = '<div class="chart-empty">Noch zu wenige Einträge für einen Verlauf in diesem Zeitraum.</div>'; wrap.appendChild(card); return wrap; }
     var vals = ds.map(function(d){ return state.entries[d].weight; });
+    var target = (state.settings.targetWeight != null) ? state.settings.targetWeight : null;
     var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (target != null) { min = Math.min(min, target); max = Math.max(max, target); }
     if (min === max) { min -= 1; max += 1; }
-    var pad = (max-min)*0.15; min -= pad; max += pad;
-    var W = 320, H = 140, PADX = 6;
-    var pts = ds.map(function(d, i) {
-      var x = PADX + (i/(ds.length-1))*(W-PADX*2);
-      var y = H - ((state.entries[d].weight-min)/(max-min))*H;
-      return x.toFixed(1) + ',' + y.toFixed(1);
+    var pad = (max-min)*0.15 || 1; min -= pad; max += pad;
+    var ticks = niceTicks(min, max, 4).map(function(v){ return { v:v, label: v.toFixed(1) }; });
+    var svg = buildLineChart({
+      data: ds.map(function(d){ return { label:d, v:state.entries[d].weight }; }),
+      min: min, max: max, yTicks: ticks, color: 'var(--accent-green)',
+      target: target != null ? { v: target, label: 'Ziel ' + target.toFixed(1) + ' kg' } : null
     });
-    card.innerHTML = '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">' +
-      '<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-      pts.map(function(p){ var xy=p.split(','); return '<circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="2.2" fill="var(--accent-green)"/>'; }).join('') + '</svg>' +
-      '<div style="display:flex;justify-content:space-between;margin-top:10px;font-size:0.76rem;color:var(--text-muted);"><span>'+niceShort(ds[0])+' · '+vals[0].toFixed(1)+' kg</span><span>'+niceShort(ds[ds.length-1])+' · '+vals[vals.length-1].toFixed(1)+' kg</span></div>';
+    var legend = '<div class="chart-legend"><span><span class="ln"></span>Gewicht (kg)</span>' +
+      (target != null ? '<span><span class="ln dashed"></span>Zielgewicht</span>' : '') + '</div>';
+    card.innerHTML = '<div class="chart-wrap">' + svg + '</div>' +
+      '<div class="chart-caption"><span>'+niceShort(ds[0])+' · '+vals[0].toFixed(1)+' kg</span><span>'+niceShort(ds[ds.length-1])+' · '+vals[vals.length-1].toFixed(1)+' kg</span></div>' + legend;
     wrap.appendChild(card);
     return wrap;
   }
   function renderCalendar() {
+    var wrap = document.createElement('div');
+    wrap.appendChild(el(
+      '<div class="range-row">' +
+        '<button class="range-btn ' + (state.sugarView==='month'?'active':'') + '" data-action="sview" data-val="month">Monat</button>' +
+        '<button class="range-btn ' + (state.sugarView==='quarter'?'active':'') + '" data-action="sview" data-val="quarter">Quartal</button>' +
+        '<button class="range-btn ' + (state.sugarView==='year'?'active':'') + '" data-action="sview" data-val="year">Jahr</button>' +
+      '</div>'
+    ));
+    if (state.sugarView === 'month') wrap.appendChild(renderMonthCal());
+    else if (state.sugarView === 'quarter') wrap.appendChild(renderQuarterCal());
+    else wrap.appendChild(renderYearHeatmap());
+    return wrap;
+  }
+
+  function cellClassFor(ds) {
+    var e = state.entries[ds];
+    if (e && e.sugarFree === true) return 'yes';
+    if (e && e.sugarFree === false) return 'no';
+    return '';
+  }
+  var LEGEND_HTML = '<div class="cal-legend"><span><span class="dot" style="background:var(--accent-green)"></span>Zuckerfrei</span><span><span class="dot" style="background:var(--accent-red)"></span>Nicht zuckerfrei</span><span><span class="dot" style="background:var(--bg-sunken);border:1px solid var(--border)"></span>Kein Eintrag</span></div>';
+
+  function renderMonthCal() {
     var wrap = document.createElement('div'), y = state.calYear, m = state.calMonth;
     wrap.appendChild(el(
       '<div class="card"><div class="cal-nav"><button data-action="cal-prev">‹</button><div class="month-label">'+MONTHS_DE[m]+' '+y+'</div><button data-action="cal-next">›</button></div>' +
-      '<div class="cal-grid" id="cal-grid"></div>' +
-      '<div class="cal-legend"><span><span class="dot" style="background:var(--accent-green)"></span>Zuckerfrei</span><span><span class="dot" style="background:var(--accent-red)"></span>Nicht zuckerfrei</span><span><span class="dot" style="background:var(--bg-sunken);border:1px solid var(--border)"></span>Kein Eintrag</span></div>' +
+      '<div class="cal-grid" id="cal-grid"></div>' + LEGEND_HTML +
       '<div class="fs" style="margin-top:12px;">Tipp: Tippe auf einen Tag, um ihn nachzutragen oder zu ändern.</div></div>'
     ));
     setTimeout(function() {
       var grid = document.getElementById('cal-grid'); if (!grid) return;
       var html = WEEKDAYS_DE.map(function(w){ return '<div class="cal-wd">'+w+'</div>'; }).join('');
-      var startOffset = (new Date(y,m,1).getDay()+6)%7, daysInMonth = new Date(y,m+1,0).getDate();
+      var startOffset = (new Date(y,m,1).getDay()+6)%7, daysInMonth = new Date(y,m+1,0).getDate(), today = todayStr();
       for (var i=0;i<startOffset;i++) html += '<div class="cal-cell blank"></div>';
-      var today = todayStr();
       for (var day=1;day<=daysInMonth;day++) {
-        var ds = fmtDate(new Date(y,m,day)), e = state.entries[ds], cls = 'cal-cell';
-        if (e && e.sugarFree === true) cls += ' yes'; else if (e && e.sugarFree === false) cls += ' no';
-        var tappable = ds <= today;
+        var ds = fmtDate(new Date(y,m,day)), cls = 'cal-cell ' + cellClassFor(ds), tappable = ds <= today;
         html += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'" style="cursor:pointer;"' : ' style="opacity:0.4;"') + '>'+day+'</div>';
       }
       grid.innerHTML = html;
     }, 0);
     return wrap;
   }
+
+  function renderQuarterCal() {
+    var wrap = document.createElement('div');
+    var q = Math.floor(state.calMonth / 3), y = state.calYear, startM = q * 3;
+    wrap.appendChild(el(
+      '<div class="card"><div class="cal-nav"><button data-action="cal-prev">‹</button><div class="month-label">Q'+(q+1)+' '+y+'</div><button data-action="cal-next">›</button></div>' +
+      '<div class="mini-months" id="mini-months"></div>' + LEGEND_HTML + '</div>'
+    ));
+    setTimeout(function() {
+      var host = document.getElementById('mini-months'); if (!host) return;
+      var today = todayStr(), out = '';
+      for (var mi = startM; mi < startM + 3; mi++) {
+        out += '<div><div class="mini-title">'+MONTHS_DE[mi]+'</div><div class="mini-grid">';
+        var startOffset = (new Date(y,mi,1).getDay()+6)%7, daysInMonth = new Date(y,mi+1,0).getDate();
+        for (var i=0;i<startOffset;i++) out += '<div class="mini-cell blank"></div>';
+        for (var day=1;day<=daysInMonth;day++) {
+          var ds = fmtDate(new Date(y,mi,day)), cls = 'mini-cell ' + cellClassFor(ds), tappable = ds <= today;
+          out += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'"' : ' style="opacity:0.4;"') + '>'+day+'</div>';
+        }
+        out += '</div></div>';
+      }
+      host.innerHTML = out;
+    }, 0);
+    return wrap;
+  }
+
+  function renderYearHeatmap() {
+    var wrap = document.createElement('div'), y = state.calYear;
+    wrap.appendChild(el(
+      '<div class="card"><div class="cal-nav"><button data-action="cal-prev">‹</button><div class="month-label">'+y+'</div><button data-action="cal-next">›</button></div>' +
+      '<div class="hm-scroll"><div class="hm-months" id="hm-months"></div><div class="hm-grid" id="hm-grid"></div></div>' + LEGEND_HTML +
+      '<div class="fs" style="margin-top:12px;">Jeder Block ist ein Tag, jede Spalte eine Woche.</div></div>'
+    ));
+    setTimeout(function() {
+      var grid = document.getElementById('hm-grid'); if (!grid) return;
+      var today = todayStr();
+      // start on Monday on/before Jan 1
+      var first = new Date(y,0,1);
+      var startOffset = (first.getDay()+6)%7;
+      var cur = new Date(y,0,1); cur.setDate(cur.getDate()-startOffset);
+      var end = new Date(y,11,31);
+      var html = '', monthCols = [], colIdx = 0, lastMonth = -1;
+      while (cur <= end) {
+        for (var r=0;r<7;r++) {
+          var ds = fmtDate(cur), inYear = cur.getFullYear()===y;
+          var cls = 'hm-cell';
+          if (!inYear || ds > today) cls += ' future';
+          else cls += ' ' + cellClassFor(ds);
+          html += '<div class="'+cls+'"' + ((inYear && ds<=today) ? ' data-action="edit-day" data-val="'+ds+'"' : '') + '></div>';
+          if (inYear && cur.getMonth() !== lastMonth && r===0) { monthCols.push({ i: colIdx, m: cur.getMonth() }); lastMonth = cur.getMonth(); }
+          cur.setDate(cur.getDate()+1);
+        }
+        colIdx++;
+      }
+      grid.innerHTML = html;
+      var mh = document.getElementById('hm-months');
+      if (mh) mh.innerHTML = monthCols.map(function(mc){ return '<span style="width:'+(15)+'px;">'+MONTHS_DE[mc.m].slice(0,3)+'</span>'; }).join('');
+    }, 0);
+    return wrap;
+  }
   function renderMoodTimeline() {
-    var wrap = document.createElement('div'), ds = sortedDates().slice(-14), moodMap = {5:'😁',4:'🙂',3:'😐',2:'😕',1:'😫'};
-    if (!ds.length) { wrap.appendChild(el('<div class="card"><div class="chart-empty">Noch keine Stimmungs-Einträge.</div></div>')); return wrap; }
-    var items = ds.map(function(d){ var mood = state.entries[d].mood; return '<div class="mood-tl-item"><div class="e">'+(mood?moodMap[mood]:'·')+'</div><div class="d">'+niceShort(d)+'</div></div>'; }).join('');
-    wrap.appendChild(el('<div class="card"><div class="mood-timeline">'+items+'</div></div>'));
+    var wrap = document.createElement('div');
+    wrap.appendChild(el(
+      '<div class="range-row">' +
+        '<button class="range-btn ' + (state.moodRange===30?'active':'') + '" data-action="mrange" data-val="30">30 Tage</button>' +
+        '<button class="range-btn ' + (state.moodRange===90?'active':'') + '" data-action="mrange" data-val="90">90 Tage</button>' +
+        '<button class="range-btn ' + (state.moodRange==='all'?'active':'') + '" data-action="mrange" data-val="all">Gesamt</button>' +
+      '</div>'
+    ));
+    var moodMap = {5:'😁',4:'🙂',3:'😐',2:'😕',1:'😫'};
+    var ds = sortedDates().filter(function(d){ return state.entries[d].mood != null; });
+    if (state.moodRange !== 'all') { var cutoff = addDays(todayStr(), -state.moodRange); ds = ds.filter(function(d){ return d >= cutoff; }); }
+    var card = document.createElement('div'); card.className = 'card';
+    if (ds.length < 2) { card.innerHTML = '<div class="chart-empty">Noch zu wenige Stimmungs-Einträge für einen Verlauf.</div>'; wrap.appendChild(card); return wrap; }
+    var yTicks = [ {v:5,label:'😁'}, {v:4,label:'🙂'}, {v:3,label:'😐'}, {v:2,label:'😕'}, {v:1,label:'😫'} ];
+    var svg = buildLineChart({
+      data: ds.map(function(d){ return { label:d, v:state.entries[d].mood }; }),
+      min: 0.6, max: 5.4, yTicks: yTicks, color: 'var(--accent-amber)', target: null
+    });
+    // compact emoji strip of the most recent days
+    var recent = ds.slice(-14);
+    var strip = '<div class="mood-timeline">' + recent.map(function(d){ return '<div class="mood-tl-item"><div class="e">'+moodMap[state.entries[d].mood]+'</div><div class="d">'+niceShort(d)+'</div></div>'; }).join('') + '</div>';
+    card.innerHTML = '<div class="chart-wrap">' + svg + '</div>' +
+      '<div class="chart-caption"><span>'+niceShort(ds[0])+'</span><span>'+niceShort(ds[ds.length-1])+'</span></div>';
+    var card2 = document.createElement('div'); card2.className = 'card'; card2.innerHTML = strip;
+    wrap.appendChild(card); wrap.appendChild(card2);
     return wrap;
   }
 
@@ -720,9 +923,12 @@
     else if (action === 'w-plus') { state.draft.weight = Math.round((state.draft.weight+0.1)*10)/10; syncCheckinUI(); }
     else if (action === 'save-entry') { saveEntry(); }
     else if (action === 'ptab') { state.progressTab = val; render(); }
+    else if (action === 'sview') { state.sugarView = val; render(); }
+    else if (action === 'mrange') { state.moodRange = (val==='all')?'all':parseInt(val,10); render(); }
+    else if (action === 'close-celebrate') { hideCelebration(); }
     else if (action === 'wrange') { state.weightRange = (val==='all')?'all':parseInt(val,10); render(); }
-    else if (action === 'cal-prev') { state.calMonth--; if (state.calMonth<0){ state.calMonth=11; state.calYear--; } render(); }
-    else if (action === 'cal-next') { state.calMonth++; if (state.calMonth>11){ state.calMonth=0; state.calYear++; } render(); }
+    else if (action === 'cal-prev') { stepCal(-1); render(); }
+    else if (action === 'cal-next') { stepCal(1); render(); }
     else if (action === 'reset-data') { resetAllData(); }
     else if (action === 'export-data') { exportBackup(); }
     else if (action === 'import-data') { var fi = document.getElementById('import-file-input'); if (fi) fi.click(); }
@@ -739,7 +945,19 @@
     state.lastResult = { sugarFree: state.draft.sugarFree, streak: streaks.current, weightDiff: (prevWeight!=null)?(state.draft.weight-prevWeight):null, newAchievements: newAch };
     state.view = 'result';
     render();
-    if (newAch.some(function(a){ return a.major; })) setTimeout(fireConfetti, 150);
+    var majors = newAch.filter(function(a){ return a.major; });
+    if (majors.length) setTimeout(function(){ showCelebration(majors[0]); }, 250);
+    else if (newAch.length) setTimeout(fireConfetti, 150);
+  }
+
+  function stepCal(dir) {
+    if (state.sugarView === 'year') { state.calYear += dir; return; }
+    var step = (state.sugarView === 'quarter') ? 3 : 1;
+    var m = state.calMonth + dir * step;
+    var y = state.calYear;
+    while (m < 0) { m += 12; y--; }
+    while (m > 11) { m -= 12; y++; }
+    state.calMonth = m; state.calYear = y;
   }
 
   function resetAllData() {
