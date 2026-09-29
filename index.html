@@ -259,6 +259,7 @@
     weightRange: 30,
     calMonth: new Date().getMonth(),
     calYear: new Date().getFullYear(),
+    activeDate: null,   // date currently being entered/edited (defaults to today)
     draft: null,
     lastResult: null,
     note: null
@@ -498,28 +499,41 @@
   }
 
   function renderCheckin() {
-    var existing = state.entries[todayStr()];
+    if (!state.activeDate) state.activeDate = todayStr();
+    var d = state.activeDate;
+    var existing = state.entries[d];
     state.draft = existing ? Object.assign({}, existing) : { sugarFree: null, mood: null, weight: null };
-    if (state.draft.weight == null) { var ref = referenceWeightFor(todayStr()); state.draft.weight = ref != null ? ref : (state.settings.startWeight || 70); }
-    var refWeight = referenceWeightFor(todayStr());
+    if (state.draft.weight == null) { var ref = referenceWeightFor(d); state.draft.weight = ref != null ? ref : (state.settings.startWeight || 70); }
+    var refWeight = referenceWeightFor(d);
+    var isToday = (d === todayStr());
     var wrap = document.createElement('div');
     wrap.appendChild(el('<div class="back-row"><button data-action="go-home">‹ Zurück</button></div>'));
-    wrap.appendChild(el('<div class="q-block"><div class="q-label">Warst du heute zuckerfrei?</div><div class="yn-row"><button class="yn-btn yes" data-action="set-sf" data-val="true">Ja</button><button class="yn-btn no" data-action="set-sf" data-val="false">Nein</button></div></div>'));
+    wrap.appendChild(el(
+      '<div class="q-block" style="margin-bottom:20px;">' +
+        '<div class="q-label">Für welchen Tag?</div>' +
+        '<input type="date" id="entry-date" max="' + todayStr() + '" value="' + d + '" ' +
+          'style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:1rem;background:var(--bg-elevated);color:var(--text);">' +
+        (isToday ? '' : '<div class="fs" style="margin-top:6px;">Du trägst einen vergangenen Tag nach: ' + niceDate(d) + '</div>') +
+      '</div>'
+    ));
+    wrap.appendChild(el('<div class="q-block"><div class="q-label">' + (isToday ? 'Warst du heute zuckerfrei?' : 'Zuckerfrei an diesem Tag?') + '</div><div class="yn-row"><button class="yn-btn yes" data-action="set-sf" data-val="true">Ja</button><button class="yn-btn no" data-action="set-sf" data-val="false">Nein</button></div></div>'));
     var moods = [ {v:5,e:'😁',l:'Sehr gut'}, {v:4,e:'🙂',l:'Gut'}, {v:3,e:'😐',l:'Neutral'}, {v:2,e:'😕',l:'Schwierig'}, {v:1,e:'😫',l:'Sehr schwer'} ];
     var moodRow = '<div class="mood-row">' + moods.map(function(m){ return '<button class="mood-btn" data-action="set-mood" data-val="'+m.v+'">'+m.e+'<span>'+m.l+'</span></button>'; }).join('') + '</div>';
-    wrap.appendChild(el('<div class="q-block"><div class="q-label">Wie fühlst du dich heute?</div>' + moodRow + '</div>'));
+    wrap.appendChild(el('<div class="q-block"><div class="q-label">' + (isToday ? 'Wie fühlst du dich heute?' : 'Stimmung an diesem Tag?') + '</div>' + moodRow + '</div>'));
     wrap.appendChild(el(
       '<div class="q-block"><div class="q-label">Gewicht</div>' +
         '<div class="weight-ctrl"><button class="weight-step" data-action="w-minus">–</button>' +
         '<input class="weight-input" id="weight-input" type="number" inputmode="decimal" step="0.1" value="' + state.draft.weight.toFixed(1) + '">' +
         '<button class="weight-step" data-action="w-plus">+</button></div>' +
-        '<div class="weight-ref">' + (refWeight!=null?('Gestern: '+refWeight.toFixed(1)+' kg'):'Kein Vortageswert vorhanden') + '</div>' +
+        '<div class="weight-ref">' + (refWeight!=null?('Vorheriger Wert: '+refWeight.toFixed(1)+' kg'):'Kein früherer Wert vorhanden') + '</div>' +
       '</div>'
     ));
-    wrap.appendChild(el('<button class="cta-btn" data-action="save-entry">Heute speichern</button>'));
+    wrap.appendChild(el('<button class="cta-btn" data-action="save-entry">' + (isToday ? 'Heute speichern' : 'Tag speichern') + '</button>'));
     setTimeout(function() {
       var wi = document.getElementById('weight-input');
       if (wi) wi.addEventListener('input', function() { var v = parseFloat(wi.value); if (!isNaN(v)) state.draft.weight = v; });
+      var di = document.getElementById('entry-date');
+      if (di) di.addEventListener('change', function() { if (di.value) { state.activeDate = di.value; render(); } });
       syncCheckinUI();
     }, 0);
     return wrap;
@@ -599,17 +613,20 @@
     wrap.appendChild(el(
       '<div class="card"><div class="cal-nav"><button data-action="cal-prev">‹</button><div class="month-label">'+MONTHS_DE[m]+' '+y+'</div><button data-action="cal-next">›</button></div>' +
       '<div class="cal-grid" id="cal-grid"></div>' +
-      '<div class="cal-legend"><span><span class="dot" style="background:var(--accent-green)"></span>Zuckerfrei</span><span><span class="dot" style="background:var(--accent-red)"></span>Nicht zuckerfrei</span><span><span class="dot" style="background:var(--bg-sunken);border:1px solid var(--border)"></span>Kein Eintrag</span></div></div>'
+      '<div class="cal-legend"><span><span class="dot" style="background:var(--accent-green)"></span>Zuckerfrei</span><span><span class="dot" style="background:var(--accent-red)"></span>Nicht zuckerfrei</span><span><span class="dot" style="background:var(--bg-sunken);border:1px solid var(--border)"></span>Kein Eintrag</span></div>' +
+      '<div class="fs" style="margin-top:12px;">Tipp: Tippe auf einen Tag, um ihn nachzutragen oder zu ändern.</div></div>'
     ));
     setTimeout(function() {
       var grid = document.getElementById('cal-grid'); if (!grid) return;
       var html = WEEKDAYS_DE.map(function(w){ return '<div class="cal-wd">'+w+'</div>'; }).join('');
       var startOffset = (new Date(y,m,1).getDay()+6)%7, daysInMonth = new Date(y,m+1,0).getDate();
       for (var i=0;i<startOffset;i++) html += '<div class="cal-cell blank"></div>';
+      var today = todayStr();
       for (var day=1;day<=daysInMonth;day++) {
         var ds = fmtDate(new Date(y,m,day)), e = state.entries[ds], cls = 'cal-cell';
         if (e && e.sugarFree === true) cls += ' yes'; else if (e && e.sugarFree === false) cls += ' no';
-        html += '<div class="'+cls+'">'+day+'</div>';
+        var tappable = ds <= today;
+        html += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'" style="cursor:pointer;"' : ' style="opacity:0.4;"') + '>'+day+'</div>';
       }
       grid.innerHTML = html;
     }, 0);
@@ -695,7 +712,8 @@
     var action = t.getAttribute('data-action'), val = t.getAttribute('data-val');
     if (action === 'nav') { state.view = val; render(); }
     else if (action === 'go-home') { state.view = 'home'; state.note = null; render(); }
-    else if (action === 'go-checkin') { state.view = 'checkin'; render(); }
+    else if (action === 'go-checkin') { state.activeDate = todayStr(); state.view = 'checkin'; render(); }
+    else if (action === 'edit-day') { state.activeDate = val; state.view = 'checkin'; render(); }
     else if (action === 'set-sf') { state.draft.sugarFree = (val === 'true'); syncCheckinUI(); }
     else if (action === 'set-mood') { state.draft.mood = parseInt(val,10); syncCheckinUI(); }
     else if (action === 'w-minus') { state.draft.weight = Math.round((state.draft.weight-0.1)*10)/10; syncCheckinUI(); }
@@ -712,9 +730,10 @@
 
   function saveEntry() {
     if (state.draft.sugarFree === null) return;
-    var prevWeight = referenceWeightFor(todayStr());
-    state.entries[todayStr()] = { sugarFree: state.draft.sugarFree, mood: state.draft.mood, weight: state.draft.weight };
-    persistEntry(todayStr());
+    var d = state.activeDate || todayStr();
+    var prevWeight = referenceWeightFor(d);
+    state.entries[d] = { sugarFree: state.draft.sugarFree, mood: state.draft.mood, weight: state.draft.weight };
+    persistEntry(d);
     var newAch = computeAndUnlockAchievements();
     var streaks = computeStreaks();
     state.lastResult = { sugarFree: state.draft.sugarFree, streak: streaks.current, weightDiff: (prevWeight!=null)?(state.draft.weight-prevWeight):null, newAchievements: newAch };
