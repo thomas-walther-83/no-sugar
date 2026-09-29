@@ -93,6 +93,25 @@
   .cta-btn.done { background: var(--accent-green-soft); color: var(--accent-green); }
 
   .empty-note { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; padding: 4px 2px 14px; }
+
+  .ring-card { display: flex; align-items: center; gap: 18px; }
+  .ring-card .ring { width: 84px; height: 84px; flex: 0 0 auto; }
+  .ring-txt .label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 3px; }
+  .ring-txt .ring-main { font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600; }
+
+  .wk-card .wk-row { display: flex; gap: 1px; }
+  .wk-item { flex: 1; }
+  .wk-num { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 600; }
+  .wk-num small { font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+  .wk-num.good { color: var(--accent-green); }
+
+  .pending-banner { background: var(--accent-amber-soft); color: var(--accent-amber); border-radius: 14px; padding: 14px 16px; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; cursor: pointer; text-align: center; }
+
+  .seg-row { display: flex; gap: 6px; background: var(--bg-sunken); border-radius: 12px; padding: 4px; }
+  .seg-btn { flex: 1; text-align: center; padding: 9px 0; border-radius: 9px; font-size: 0.86rem; font-weight: 500; color: var(--text-muted); }
+  .seg-btn.active { background: var(--bg-elevated); color: var(--text); font-weight: 600; }
+  .note-input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 0.95rem; background: var(--bg-elevated); color: var(--text); resize: none; min-height: 60px; }
+  .note-input:focus { outline: none; border-color: var(--accent-green); }
   .section-title { font-size: 1.15rem; font-weight: 600; margin: 22px 2px 10px; }
   .section-title:first-child { margin-top: 6px; }
 
@@ -288,6 +307,14 @@
   }
   function requestPersistence() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e) {} }
 
+  function applyTheme() {
+    var t = (state.settings && state.settings.theme) ? state.settings.theme : 'auto';
+    var root = document.documentElement;
+    if (t === 'light') root.setAttribute('data-theme', 'light');
+    else if (t === 'dark') root.setAttribute('data-theme', 'dark');
+    else root.removeAttribute('data-theme');
+  }
+
   /* ==========================================================
      IN-MEMORY STATE (mirror of IndexedDB, drives synchronous render)
      ========================================================== */
@@ -403,7 +430,7 @@
   function buildExportObject() {
     var days = sortedDates().map(function(d) {
       var e = state.entries[d];
-      return { date: d, weight: e.weight, sugarFree: e.sugarFree, mood: e.mood != null ? MOOD_TO_LABEL[e.mood] : null };
+      return { date: d, weight: e.weight, sugarFree: e.sugarFree, mood: e.mood != null ? MOOD_TO_LABEL[e.mood] : null, note: e.note || null };
     });
     return { app: 'No Sugar', version: 1, exportedAt: new Date().toISOString(), settings: state.settings, achievements: state.achievements, days: days };
   }
@@ -439,7 +466,8 @@
         state.entries[rec.date] = {
           sugarFree: (rec.sugarFree === true || rec.sugarFree === false) ? rec.sugarFree : null,
           mood: mood != null ? mood : null,
-          weight: (typeof rec.weight === 'number') ? rec.weight : null
+          weight: (typeof rec.weight === 'number') ? rec.weight : null,
+          note: (rec.note && String(rec.note).trim()) ? String(rec.note).trim() : null
         };
         persistEntry(rec.date);
       });
@@ -541,6 +569,28 @@
       heroDelta = '<div class="delta ' + cls + '">' + (diffStart>0?'+':'') + diffStart.toFixed(1) + ' kg seit Start (' + startW.toFixed(1) + ' kg)</div>';
     }
     wrap.appendChild(el('<div class="card hero-stat"><div class="label">Aktuelles Gewicht</div><div class="num">' + (cw!=null?cw.toFixed(1):'—') + '<small>kg</small></div>' + heroDelta + '</div>'));
+
+    // Progress ring toward target weight
+    var target = state.settings.targetWeight;
+    if (target != null && startW != null && cw != null && startW !== target) {
+      var prog = (startW - cw) / (startW - target);
+      prog = Math.max(0, Math.min(1, prog));
+      var pct = Math.round(prog * 100);
+      var lost = Math.max(0, startW - cw), toLose = startW - target;
+      var C = 2 * Math.PI * 34;
+      var off = C * (1 - prog);
+      wrap.appendChild(el(
+        '<div class="card ring-card">' +
+          '<svg viewBox="0 0 80 80" class="ring">' +
+            '<circle cx="40" cy="40" r="34" fill="none" stroke="var(--bg-sunken)" stroke-width="8"/>' +
+            '<circle cx="40" cy="40" r="34" fill="none" stroke="var(--accent-green)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 40 40)"/>' +
+            '<text x="40" y="45" text-anchor="middle" font-size="17" font-weight="600" fill="var(--text)" font-family="Fraunces,serif">'+pct+'%</text>' +
+          '</svg>' +
+          '<div class="ring-txt"><div class="label">Weg zum Ziel</div><div class="ring-main">'+lost.toFixed(1)+' von '+toLose.toFixed(1)+' kg</div><div class="fs">Ziel: '+target.toFixed(1)+' kg</div></div>' +
+        '</div>'
+      ));
+    }
+
     wrap.appendChild(el(
       '<div class="stat-grid">' +
         '<div class="stat-cell"><div class="label">Aktuelle Serie</div><div class="num fire">' + streaks.current + (streaks.current===1?' Tag':' Tage') + '</div></div>' +
@@ -549,9 +599,38 @@
         '<div class="stat-cell"><div class="label">Punkte</div><div class="num">' + computePoints() + '</div></div>' +
       '</div>'
     ));
+
+    // Weekly review (last 7 days incl. today)
+    var wk = weeklyReview();
+    if (wk.entries > 0) {
+      wrap.appendChild(el(
+        '<div class="card wk-card">' +
+          '<div class="label" style="margin-bottom:8px;">Letzte 7 Tage</div>' +
+          '<div class="wk-row">' +
+            '<div class="wk-item"><div class="wk-num">'+wk.sugarFree+'<small>/7</small></div><div class="fs">zuckerfrei</div></div>' +
+            '<div class="wk-item"><div class="wk-num ' + (wk.weightDiff!=null && wk.weightDiff<0?'good':'') + '">'+(wk.weightDiff!=null?((wk.weightDiff>0?'+':'')+wk.weightDiff.toFixed(1)):'—')+'<small> kg</small></div><div class="fs">Gewicht</div></div>' +
+          '</div>' +
+        '</div>'
+      ));
+    }
+
+    if (!hasToday) wrap.appendChild(el('<div class="pending-banner" data-action="go-checkin">📝 Heutiger Check-in steht noch aus — jetzt erfassen</div>'));
     wrap.appendChild(el('<button class="cta-btn ' + (hasToday?'done':'') + '" data-action="go-checkin">' + (hasToday?'Heute bereits erfasst — bearbeiten':'Heutiger Check-in') + '</button>'));
     if (Object.keys(state.entries).length === 0) wrap.appendChild(el('<div class="empty-note">Noch keine Einträge. Der erste Check-in dauert unter 15 Sekunden.</div>'));
     return wrap;
+  }
+
+  function weeklyReview() {
+    var today = todayStr(), sugarFree = 0, entries = 0;
+    for (var i = 0; i < 7; i++) {
+      var d = addDays(today, -i), e = state.entries[d];
+      if (e) { entries++; if (e.sugarFree === true) sugarFree++; }
+    }
+    // weight change across the last 7 days
+    var recent = sortedDates().filter(function(d){ return state.entries[d].weight != null && d <= today && d >= addDays(today,-6); });
+    var weightDiff = null;
+    if (recent.length >= 2) weightDiff = state.entries[recent[recent.length-1]].weight - state.entries[recent[0]].weight;
+    return { sugarFree: sugarFree, entries: entries, weightDiff: weightDiff };
   }
 
   function renderCheckin() {
@@ -584,12 +663,19 @@
         '<div class="weight-ref">' + (refWeight!=null?('Vorheriger Wert: '+refWeight.toFixed(1)+' kg'):'Kein früherer Wert vorhanden') + '</div>' +
       '</div>'
     ));
+    wrap.appendChild(el(
+      '<div class="q-block"><div class="q-label">Notiz <span style="color:var(--text-faint);font-weight:400;">(optional)</span></div>' +
+        '<textarea class="note-input" id="note-input" placeholder="z. B. auswärts gegessen, Geburtstag …" maxlength="280">' + (state.draft.note ? String(state.draft.note).replace(/</g,'&lt;') : '') + '</textarea>' +
+      '</div>'
+    ));
     wrap.appendChild(el('<button class="cta-btn" data-action="save-entry">' + (isToday ? 'Heute speichern' : 'Tag speichern') + '</button>'));
     setTimeout(function() {
       var wi = document.getElementById('weight-input');
       if (wi) wi.addEventListener('input', function() { var v = parseFloat(wi.value); if (!isNaN(v)) state.draft.weight = v; });
       var di = document.getElementById('entry-date');
       if (di) di.addEventListener('change', function() { if (di.value) { state.activeDate = di.value; render(); } });
+      var ni = document.getElementById('note-input');
+      if (ni) ni.addEventListener('input', function() { state.draft.note = ni.value; });
       syncCheckinUI();
     }, 0);
     return wrap;
@@ -664,6 +750,13 @@
       svg += '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+opts.color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
     }
     opts.data.forEach(function(d, i) { svg += '<circle cx="'+xPix(i).toFixed(1)+'" cy="'+yPix(d.v).toFixed(1)+'" r="2.4" fill="'+opts.color+'"/>'; });
+    // optional overlay line (e.g. moving average), values aligned to data indices; null = gap
+    if (opts.overlay && opts.overlay.values) {
+      var ov = opts.overlay.values, seg = [];
+      function flush() { if (seg.length >= 2) svg += '<polyline points="'+seg.join(' ')+'" fill="none" stroke="'+opts.overlay.color+'" stroke-width="2" stroke-dasharray="'+(opts.overlay.dash||'')+'" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>'; seg = []; }
+      ov.forEach(function(v, i){ if (v == null) { flush(); } else { seg.push(xPix(i).toFixed(1)+','+yPix(v).toFixed(1)); } });
+      flush();
+    }
     svg += '</svg>';
     return svg;
   }
@@ -699,12 +792,21 @@
     if (min === max) { min -= 1; max += 1; }
     var pad = (max-min)*0.15 || 1; min -= pad; max += pad;
     var ticks = niceTicks(min, max, 4).map(function(v){ return { v:v, label: v.toFixed(1) }; });
+    // 7-day moving average aligned to ds indices
+    var smooth = ds.map(function(d, i) {
+      var sum = 0, cnt = 0;
+      for (var j = Math.max(0, i-6); j <= i; j++) { sum += state.entries[ds[j]].weight; cnt++; }
+      return cnt >= 3 ? sum / cnt : null;
+    });
+    var hasSmooth = smooth.some(function(v){ return v != null; });
     var svg = buildLineChart({
       data: ds.map(function(d){ return { label:d, v:state.entries[d].weight }; }),
       min: min, max: max, yTicks: ticks, color: 'var(--accent-green)',
-      target: target != null ? { v: target, label: 'Ziel ' + target.toFixed(1) + ' kg' } : null
+      target: target != null ? { v: target, label: 'Ziel ' + target.toFixed(1) + ' kg' } : null,
+      overlay: hasSmooth ? { values: smooth, color: 'var(--text-muted)', dash: '' } : null
     });
     var legend = '<div class="chart-legend"><span><span class="ln"></span>Gewicht (kg)</span>' +
+      (hasSmooth ? '<span><span class="ln" style="border-top-color:var(--text-muted);"></span>Ø 7 Tage</span>' : '') +
       (target != null ? '<span><span class="ln dashed"></span>Zielgewicht</span>' : '') + '</div>';
     card.innerHTML = '<div class="chart-wrap">' + svg + '</div>' +
       '<div class="chart-caption"><span>'+niceShort(ds[0])+' · '+vals[0].toFixed(1)+' kg</span><span>'+niceShort(ds[ds.length-1])+' · '+vals[vals.length-1].toFixed(1)+' kg</span></div>' + legend;
@@ -871,6 +973,15 @@
       '<div class="card"><div class="field-row"><div class="fl">Startgewicht</div><input type="number" step="0.1" id="set-start" value="'+state.settings.startWeight.toFixed(1)+'"></div>' +
       '<div class="field-row"><div class="fl">Zielgewicht</div><input type="number" step="0.1" id="set-target" value="'+(state.settings.targetWeight!=null?state.settings.targetWeight.toFixed(1):'')+'" placeholder="—"></div></div>'
     ));
+    wrap.appendChild(el('<div class="section-title">Darstellung</div>'));
+    var th = (state.settings.theme || 'auto');
+    wrap.appendChild(el(
+      '<div class="card"><div class="seg-row">' +
+        '<button class="seg-btn ' + (th==='auto'?'active':'') + '" data-action="theme" data-val="auto">Automatisch</button>' +
+        '<button class="seg-btn ' + (th==='light'?'active':'') + '" data-action="theme" data-val="light">Hell</button>' +
+        '<button class="seg-btn ' + (th==='dark'?'active':'') + '" data-action="theme" data-val="dark">Dunkel</button>' +
+      '</div><div class="fs" style="margin-top:8px;">„Automatisch" folgt der iPhone-Einstellung.</div></div>'
+    ));
     wrap.appendChild(el('<div class="section-title">Sicherung</div>'));
     var noteHtml = '';
     if (state.note) { var color = state.note.type==='ok'?'var(--accent-green)':'var(--accent-red)'; noteHtml = '<div class="fs" style="color:'+color+';margin-bottom:10px;">'+state.note.text+'</div>'; }
@@ -926,6 +1037,7 @@
     else if (action === 'sview') { state.sugarView = val; render(); }
     else if (action === 'mrange') { state.moodRange = (val==='all')?'all':parseInt(val,10); render(); }
     else if (action === 'close-celebrate') { hideCelebration(); }
+    else if (action === 'theme') { state.settings.theme = val; persistSettings(); applyTheme(); render(); }
     else if (action === 'wrange') { state.weightRange = (val==='all')?'all':parseInt(val,10); render(); }
     else if (action === 'cal-prev') { stepCal(-1); render(); }
     else if (action === 'cal-next') { stepCal(1); render(); }
@@ -938,7 +1050,7 @@
     if (state.draft.sugarFree === null) return;
     var d = state.activeDate || todayStr();
     var prevWeight = referenceWeightFor(d);
-    state.entries[d] = { sugarFree: state.draft.sugarFree, mood: state.draft.mood, weight: state.draft.weight };
+    state.entries[d] = { sugarFree: state.draft.sugarFree, mood: state.draft.mood, weight: state.draft.weight, note: (state.draft.note && state.draft.note.trim()) ? state.draft.note.trim() : null };
     persistEntry(d);
     var newAch = computeAndUnlockAchievements();
     var streaks = computeStreaks();
@@ -979,8 +1091,9 @@
   }).then(function(res) {
     var settingsRec = res[0], entryRecs = res[1], achRecs = res[2];
     state.settings = settingsRec ? settingsRec.value : null;
-    entryRecs.forEach(function(r){ state.entries[r.date] = { sugarFree: r.sugarFree, mood: r.mood, weight: r.weight }; });
+    entryRecs.forEach(function(r){ state.entries[r.date] = { sugarFree: r.sugarFree, mood: r.mood, weight: r.weight, note: r.note || null }; });
     state.achievements = achRecs || [];
+    applyTheme();
     render();
   }).catch(function() { render(); });
 
