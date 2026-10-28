@@ -190,6 +190,50 @@
   .field-row .fl { font-size: 0.95rem; }
   .field-row input[type=number] { border: none; background: none; text-align: right; font-size: 1rem; width: 90px; color: var(--text); font-weight: 600; }
   .field-row input:focus { outline: none; }
+
+  /* ---- Zusatzmodule ---- */
+  .switch { position: relative; width: 50px; height: 30px; border-radius: 15px; border: none; background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--border); cursor: pointer; flex-shrink: 0; transition: background .2s; padding: 0; }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  .switch.on { background: var(--accent-green); box-shadow: none; }
+  .switch.on .knob { transform: translateX(20px); }
+  .mod-row { border-bottom: 1px solid var(--border); }
+  .mod-sub { padding: 4px 2px 14px; border-bottom: 1px solid var(--border); }
+  .wd-row { display: flex; gap: 6px; }
+  .wd-btn { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-sunken); color: var(--text); font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .wd-btn.active { background: var(--accent-green); color: #fff; border-color: transparent; }
+  .se-edit-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .se-edit-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 12px; border-radius: 16px; background: var(--bg-sunken); border: 1px solid var(--border); font-size: 0.85rem; }
+  .se-edit-chip button { border: none; background: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; padding: 2px 6px; }
+  .se-add { display: flex; gap: 8px; }
+  .se-add input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-sunken); color: var(--text); font-size: 1rem; font-family: inherit; }
+  .se-add button { padding: 10px 14px; border-radius: 10px; border: none; background: var(--accent-green); color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .tg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .tg-btn { display: flex; align-items: center; gap: 8px; padding: 13px 12px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--bg-sunken); color: var(--text); font-size: 0.88rem; font-weight: 500; text-align: left; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .tg-btn.tg-wide { width: 100%; margin-bottom: 10px; }
+  .tg-btn .tg-ic { font-size: 1.2rem; }
+  .tg-btn .tg-txt { flex: 1; line-height: 1.2; }
+  .tg-btn .tg-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); flex-shrink: 0; }
+  .tg-btn.active { background: var(--accent-green-soft); border-color: var(--accent-green); color: var(--accent-green); font-weight: 600; }
+  .tg-btn.active .tg-check { background: var(--accent-green); border-color: var(--accent-green); box-shadow: inset 0 0 0 4px var(--accent-green-soft); }
+  .q-sub { font-size: 0.85rem; color: var(--text-muted); margin: 6px 0 8px; }
+  .se-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .se-chip { display: inline-flex; flex-direction: column; align-items: center; padding: 8px 14px; border-radius: 18px; border: 1.5px solid var(--border); background: var(--bg-sunken); color: var(--text); font-size: 0.85rem; cursor: pointer; font-family: inherit; line-height: 1.2; }
+  .se-chip.lvl1 { background: var(--accent-amber-soft); border-color: var(--accent-amber); color: var(--accent-amber); }
+  .se-chip.lvl2 { background: var(--accent-amber-soft); border-color: var(--accent-amber); color: var(--accent-amber); font-weight: 600; }
+  .se-chip.lvl3 { background: var(--accent-amber); border-color: var(--accent-amber); color: #fff; font-weight: 600; }
+  .se-dots { font-size: 0.6rem; letter-spacing: 2px; margin-top: 2px; }
+  .inj-banner { background: var(--accent-green-soft); color: var(--accent-green); border-radius: 14px; padding: 14px 16px; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; cursor: pointer; text-align: center; }
+  .cal-cell .inj-mark { position: absolute; top: 1px; right: 2px; font-size: 0.5rem; line-height: 1; }
+  .bilanz-sep { height: 1px; background: var(--border); margin: 18px 0 14px; }
+  .se-top { margin-top: 14px; }
+  .se-top-chip { display: inline-block; margin: 0 6px 6px 0; padding: 5px 11px; border-radius: 14px; background: var(--bg-sunken); border: 1px solid var(--border); font-size: 0.8rem; }
+  .se-top-chip small { color: var(--text-muted); }
+  .cyc-row { display: grid; grid-template-columns: 70px 1fr 52px; gap: 4px 10px; align-items: center; margin-bottom: 12px; }
+  .cyc-lbl { font-size: 0.8rem; font-weight: 600; }
+  .cyc-track { height: 10px; border-radius: 5px; background: var(--bg-sunken); overflow: hidden; }
+  .cyc-bar { height: 100%; border-radius: 5px; background: var(--accent-amber); min-width: 2px; }
+  .cyc-val { font-size: 0.78rem; color: var(--text-muted); text-align: right; }
+  .cyc-eff { grid-column: 2 / 4; font-size: 0.75rem; color: var(--text-muted); }
   .btn-outline { width: 100%; text-align: center; padding: 14px; border: 1.5px solid var(--border); border-radius: 14px; font-size: 0.92rem; font-weight: 500; color: var(--text-muted); }
   .btn-danger { border-color: var(--accent-red); color: var(--accent-red); }
   .fs { font-size: 0.78rem; color: var(--text-faint); line-height: 1.5; }
@@ -340,6 +384,7 @@
     calYear: new Date().getFullYear(),
     activeDate: null,   // date currently being entered/edited (defaults to today)
     draft: null,
+    draftSeNames: [],
     lastResult: null,
     note: null,
     animatedStreak: false
@@ -363,6 +408,72 @@
 
   var MOOD_TO_LABEL = { 5:'very_good', 4:'good', 3:'neutral', 2:'difficult', 1:'very_difficult' };
   var LABEL_TO_MOOD = { very_good:5, good:4, neutral:3, difficult:2, very_difficult:1 };
+
+  /* ==========================================================
+     ZUSATZMODULE (optional, in den Einstellungen einzeln aktivierbar)
+     Zusätzliche Felder pro Tag-Eintrag:
+       inj (bool) · se ({name: 1..3}) · healthy / water / exercise / sleep (bool)
+     Fehlt ein Feld (undefined), war das Modul an diesem Tag nicht aktiv.
+     ========================================================== */
+  var MODULES = [
+    { key:'injection',   field:'inj',      ic:'💉', label:'Spritztag' },
+    { key:'sideEffects', field:'se',       ic:'🤢', label:'Nebenwirkungen' },
+    { key:'healthy',     field:'healthy',  ic:'🥗', label:'Gesund gegessen' },
+    { key:'water',       field:'water',    ic:'💧', label:'2–3 Liter getrunken' },
+    { key:'exercise',    field:'exercise', ic:'🏃', label:'Bewegung' },
+    { key:'sleep',       field:'sleep',    ic:'😴', label:'Gut geschlafen' }
+  ];
+  var BOOL_MODULES = ['healthy', 'water', 'exercise', 'sleep'];
+  var EXTRA_FIELDS = ['inj', 'se', 'healthy', 'water', 'exercise', 'sleep'];
+  var DEFAULT_SIDE_EFFECTS = ['Übelkeit', 'Müdigkeit', 'Kopfschmerzen', 'Verstopfung', 'Durchfall', 'Schwindel', 'Appetitlosigkeit', 'Sodbrennen'];
+  var SE_LEVEL_LABEL = { 1: 'leicht', 2: 'mittel', 3: 'stark' };
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function modInfo(key) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === key) return MODULES[i]; return null; }
+  function ensureSettingsDefaults() {
+    var s = state.settings; if (!s) return;
+    if (!s.modules || typeof s.modules !== 'object') s.modules = {};
+    MODULES.forEach(function(m) { if (typeof s.modules[m.key] !== 'boolean') s.modules[m.key] = false; });
+    if (typeof s.injectionWeekday !== 'number') s.injectionWeekday = null;   // 0 = Mo … 6 = So
+    if (!Array.isArray(s.sideEffectList)) s.sideEffectList = DEFAULT_SIDE_EFFECTS.slice();
+  }
+  function moduleOn(key) { return !!(state.settings && state.settings.modules && state.settings.modules[key]); }
+  function anyModuleOn() { return MODULES.some(function(m) { return moduleOn(m.key); }); }
+  function weekdayIdx(dateStr) { return (new Date(dateStr + 'T00:00:00').getDay() + 6) % 7; }
+  function isInjectionDay(dateStr) {
+    return moduleOn('injection') && state.settings.injectionWeekday != null && weekdayIdx(dateStr) === state.settings.injectionWeekday;
+  }
+  // next scheduled injection day, searching from fromStr (inclusive) over the next 7 days
+  function nextInjectionFrom(fromStr) {
+    if (!moduleOn('injection') || state.settings.injectionWeekday == null) return null;
+    for (var i = 0; i < 7; i++) { var d = addDays(fromStr, i); if (weekdayIdx(d) === state.settings.injectionWeekday) return { date: d, offset: i }; }
+    return null;
+  }
+  function pickExtras(src) {
+    var out = {};
+    EXTRA_FIELDS.forEach(function(f) { if (src && src[f] !== undefined && src[f] !== null) out[f] = src[f]; });
+    return out;
+  }
+  function cleanSe(se) {
+    var out = {};
+    Object.keys(se || {}).forEach(function(k) { var v = se[k]; if (v >= 1 && v <= 3) out[k] = v; });
+    return out;
+  }
+  function seNamesFor(se) {
+    var list = (state.settings && Array.isArray(state.settings.sideEffectList)) ? state.settings.sideEffectList.slice() : [];
+    Object.keys(se || {}).forEach(function(n) { if (list.indexOf(n) === -1) list.push(n); });
+    return list;
+  }
+  function seChipsHtml() {
+    var names = state.draftSeNames || [];
+    if (!names.length) return '<div class="fs">Noch keine Nebenwirkungen definiert — in den Einstellungen unter „Zusatzfelder“ hinzufügen.</div>';
+    return names.map(function(n, i) {
+      var lv = (state.draft && state.draft.se && state.draft.se[n]) || 0;
+      var dots = lv ? '●●●'.slice(0, lv) + '○○○'.slice(0, 3 - lv) : '';
+      return '<button class="se-chip lvl' + lv + '" data-action="se" data-val="' + i + '" aria-label="' + esc(n) + (lv ? ': ' + SE_LEVEL_LABEL[lv] : ': nicht aktiv') + '">' +
+        '<span>' + esc(n) + '</span>' + (lv ? '<span class="se-dots">' + dots + '</span>' : '') + '</button>';
+    }).join('');
+  }
 
   /* ==========================================================
      DERIVED DATA
@@ -440,9 +551,36 @@
   function buildExportObject() {
     var days = sortedDates().map(function(d) {
       var e = state.entries[d];
-      return { date: d, weight: e.weight, sugarFree: e.sugarFree, mood: e.mood != null ? MOOD_TO_LABEL[e.mood] : null, note: e.note || null };
+      var out = { date: d, weight: e.weight, sugarFree: e.sugarFree, mood: e.mood != null ? MOOD_TO_LABEL[e.mood] : null, note: e.note || null };
+      // Zusatzfelder nur exportieren, wenn für diesen Tag vorhanden
+      if (e.inj !== undefined) out.injection = e.inj;
+      if (e.se !== undefined) out.sideEffects = e.se;
+      if (e.healthy !== undefined) out.healthyEating = e.healthy;
+      if (e.water !== undefined) out.water = e.water;
+      if (e.exercise !== undefined) out.exercise = e.exercise;
+      if (e.sleep !== undefined) out.sleep = e.sleep;
+      return out;
     });
-    return { app: 'No Sugar', version: 1, exportedAt: new Date().toISOString(), settings: state.settings, achievements: state.achievements, days: days };
+    return { app: 'No Sugar', version: 2, exportedAt: new Date().toISOString(), settings: state.settings, achievements: state.achievements, days: days };
+  }
+  function parseExtrasFromRecord(rec) {
+    var out = {};
+    function b(v) { return (v === true || v === false) ? v : undefined; }
+    var v;
+    if ((v = b(rec.injection)) !== undefined) out.inj = v;
+    if ((v = b(rec.healthyEating)) !== undefined) out.healthy = v;
+    if ((v = b(rec.water)) !== undefined) out.water = v;
+    if ((v = b(rec.exercise)) !== undefined) out.exercise = v;
+    if ((v = b(rec.sleep)) !== undefined) out.sleep = v;
+    if (rec.sideEffects && typeof rec.sideEffects === 'object' && !Array.isArray(rec.sideEffects)) {
+      var se = {};
+      Object.keys(rec.sideEffects).forEach(function(k) {
+        var lv = parseInt(rec.sideEffects[k], 10);
+        if (k !== '__proto__' && lv >= 1 && lv <= 3) se[String(k).slice(0, 60)] = lv;
+      });
+      out.se = se;
+    }
+    return out;
   }
   function exportBackup() {
     var json = JSON.stringify(buildExportObject(), null, 2);
@@ -473,15 +611,24 @@
       days.forEach(function(rec) {
         if (!rec || !rec.date) return;
         var mood = (typeof rec.mood === 'number') ? rec.mood : (rec.mood != null ? LABEL_TO_MOOD[rec.mood] : null);
-        state.entries[rec.date] = {
+        state.entries[rec.date] = Object.assign({
           sugarFree: (rec.sugarFree === true || rec.sugarFree === false) ? rec.sugarFree : null,
           mood: mood != null ? mood : null,
           weight: (typeof rec.weight === 'number') ? rec.weight : null,
           note: (rec.note && String(rec.note).trim()) ? String(rec.note).trim() : null
-        };
+        }, parseExtrasFromRecord(rec));
         persistEntry(rec.date);
       });
-      if (!Array.isArray(data) && data.settings) { state.settings = data.settings; persistSettings(); }
+      if (!Array.isArray(data) && data.settings) {
+        // Zusatzmodule der aktuellen Einstellungen behalten, falls die Sicherung (alte Version) keine kennt
+        var keepMods = state.settings && state.settings.modules, keepWd = state.settings && state.settings.injectionWeekday, keepList = state.settings && state.settings.sideEffectList;
+        state.settings = data.settings;
+        if (!state.settings.modules && keepMods) state.settings.modules = keepMods;
+        if (state.settings.injectionWeekday === undefined && keepWd !== undefined) state.settings.injectionWeekday = keepWd;
+        if (!state.settings.sideEffectList && keepList) state.settings.sideEffectList = keepList;
+      }
+      ensureSettingsDefaults();
+      persistSettings();
       if (!Array.isArray(data) && Array.isArray(data.achievements)) { state.achievements = data.achievements.slice(); state.achievements.forEach(persistAchievement); }
       else { computeAndUnlockAchievements(); }
       state.note = { type: 'ok', text: 'Sicherung wiederhergestellt.' };
@@ -562,6 +709,7 @@
       var tv = parseFloat(document.getElementById('ob-target').value);
       if (!sv || isNaN(sv)) { document.getElementById('ob-start').focus(); return; }
       state.settings = { startWeight: sv, targetWeight: isNaN(tv) ? null : tv, onboarded: true };
+      ensureSettingsDefaults();
       persistSettings();
       requestPersistence();
       render();
@@ -578,6 +726,25 @@
       var cls = diffStart > 0 ? 'pos' : (diffStart < 0 ? 'neg' : '');
       heroDelta = '<div class="delta ' + cls + '">' + (diffStart>0?'+':'') + diffStart.toFixed(1) + ' kg seit Start (' + startW.toFixed(1) + ' kg)</div>';
     }
+    // Heutiger Check-in ganz oben (kein Scrollen nötig)
+    // Spritztag-Hinweis (nur wenn Modul aktiv und Wochentag gewählt)
+    if (moduleOn('injection') && state.settings.injectionWeekday != null) {
+      var todayEntry = state.entries[todayStr()];
+      var injDone = !!(todayEntry && todayEntry.inj === true);
+      if (isInjectionDay(todayStr()) && !injDone) {
+        wrap.appendChild(el('<div class="inj-banner" data-action="go-checkin">💉 Heute ist Spritztag — im Check-in bestätigen</div>'));
+      } else {
+        var nx = nextInjectionFrom(addDays(todayStr(), 1));
+        if (nx) {
+          var nxLabel = new Date(nx.date + 'T00:00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' });
+          wrap.appendChild(el('<div class="mile-card">💉 Nächster Spritztag: ' + nxLabel + ' (' + (nx.offset + 1 === 1 ? 'morgen' : 'in ' + (nx.offset + 1) + ' Tagen') + ')</div>'));
+        }
+      }
+    }
+
+    if (!hasToday) wrap.appendChild(el('<div class="pending-banner" data-action="go-checkin">📝 Heutiger Check-in steht noch aus — jetzt erfassen</div>'));
+    wrap.appendChild(el('<button class="cta-btn ' + (hasToday?'done':'') + '" data-action="go-checkin">' + (hasToday?'Heute bereits erfasst — bearbeiten':'Heutiger Check-in') + '</button>'));
+
     wrap.appendChild(el('<div class="card hero-stat"><div class="label">Aktuelles Gewicht</div><div class="num">' + (cw!=null?cw.toFixed(1):'—') + '<small>kg</small></div>' + heroDelta + '</div>'));
 
     // Progress ring toward target weight
@@ -632,8 +799,6 @@
       ));
     }
 
-    if (!hasToday) wrap.appendChild(el('<div class="pending-banner" data-action="go-checkin">📝 Heutiger Check-in steht noch aus — jetzt erfassen</div>'));
-    wrap.appendChild(el('<button class="cta-btn ' + (hasToday?'done':'') + '" data-action="go-checkin">' + (hasToday?'Heute bereits erfasst — bearbeiten':'Heutiger Check-in') + '</button>'));
     if (Object.keys(state.entries).length === 0) wrap.appendChild(el('<div class="empty-note">Noch keine Einträge. Der erste Check-in dauert unter 15 Sekunden.</div>'));
     if (!state.animatedStreak && streaks.current > 0) {
       state.animatedStreak = true;
@@ -686,6 +851,11 @@
     var d = state.activeDate;
     var existing = state.entries[d];
     state.draft = existing ? Object.assign({}, existing) : { sugarFree: null, mood: null, weight: null };
+    // Zusatzfelder: Entwurf vorbereiten (Spritztag wird nur bei neuen Einträgen am festen Wochentag vorbelegt)
+    state.draft.se = (existing && existing.se) ? JSON.parse(JSON.stringify(existing.se)) : {};
+    state.draft.inj = existing ? (existing.inj === true) : isInjectionDay(d);
+    BOOL_MODULES.forEach(function(k) { state.draft[k] = !!(existing && existing[k] === true); });
+    state.draftSeNames = seNamesFor(state.draft.se);
     if (state.draft.weight == null) { var ref = referenceWeightFor(d); state.draft.weight = ref != null ? ref : (state.settings.startWeight || 70); }
     var refWeight = referenceWeightFor(d);
     var isToday = (d === todayStr());
@@ -703,6 +873,7 @@
     var moods = [ {v:5,e:'😁',l:'Sehr gut'}, {v:4,e:'🙂',l:'Gut'}, {v:3,e:'😐',l:'Neutral'}, {v:2,e:'😕',l:'Schwierig'}, {v:1,e:'😫',l:'Sehr schwer'} ];
     var moodRow = '<div class="mood-row">' + moods.map(function(m){ return '<button class="mood-btn" data-action="set-mood" data-val="'+m.v+'">'+m.e+'<span>'+m.l+'</span></button>'; }).join('') + '</div>';
     wrap.appendChild(el('<div class="q-block"><div class="q-label">' + (isToday ? 'Wie fühlst du dich heute?' : 'Stimmung an diesem Tag?') + '</div>' + moodRow + '</div>'));
+    if (anyModuleOn()) wrap.appendChild(renderExtrasBlock(d, isToday));
     wrap.appendChild(el(
       '<div class="q-block"><div class="q-label">Gewicht</div>' +
         '<div class="weight-ctrl"><button class="weight-step" data-action="w-minus">–</button>' +
@@ -728,9 +899,36 @@
     }, 0);
     return wrap;
   }
+  function renderExtrasBlock(d, isToday) {
+    var html = '<div class="q-block"><div class="q-label">Zusätzlich</div>';
+    if (moduleOn('injection')) {
+      html += '<button class="tg-btn tg-wide" data-action="tg" data-val="inj" aria-pressed="false">' +
+        '<span class="tg-ic">💉</span><span class="tg-txt">Spritze ' + (isToday ? 'heute' : 'an diesem Tag') +
+        (isInjectionDay(d) ? '<small>Dein Spritztag</small>' : '') + '</span><span class="tg-check"></span></button>';
+    }
+    var bools = BOOL_MODULES.filter(moduleOn);
+    if (bools.length) {
+      html += '<div class="tg-grid">' + bools.map(function(k) {
+        var m = modInfo(k);
+        return '<button class="tg-btn" data-action="tg" data-val="' + k + '" aria-pressed="false"><span class="tg-ic">' + m.ic + '</span><span class="tg-txt">' + m.label + '</span><span class="tg-check"></span></button>';
+      }).join('') + '</div>';
+    }
+    if (moduleOn('sideEffects')) {
+      html += '<div class="q-sub">🤢 Nebenwirkungen <span class="fs">Antippen: leicht → mittel → stark → aus</span></div>' +
+        '<div class="se-wrap" id="se-wrap">' + seChipsHtml() + '</div>';
+    }
+    html += '</div>';
+    return el(html);
+  }
+
   function syncCheckinUI() {
     document.querySelectorAll('.yn-btn').forEach(function(b) { b.classList.toggle('active', state.draft.sugarFree === (b.getAttribute('data-val') === 'true')); });
     document.querySelectorAll('.mood-btn').forEach(function(b) { b.classList.toggle('active', state.draft.mood === parseInt(b.getAttribute('data-val'),10)); });
+    document.querySelectorAll('.tg-btn').forEach(function(b) {
+      var on = state.draft[b.getAttribute('data-val')] === true;
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var sw = document.getElementById('se-wrap'); if (sw) sw.innerHTML = seChipsHtml();
     var wi = document.getElementById('weight-input'); if (wi && document.activeElement !== wi) wi.value = state.draft.weight.toFixed(1);
   }
 
@@ -744,6 +942,7 @@
         '<h2>' + (r.sugarFree?'Tag gespeichert':'Auch das gehört dazu') + '</h2>' +
         '<p>' + (r.sugarFree?('Aktuelle Serie: '+r.streak+(r.streak===1?' Tag':' Tage')):'Morgen beginnt eine neue Serie. Weiter geht’s.') + '</p>' +
         (r.weightDiff!=null?'<p>Gewicht: '+(r.weightDiff>0?'+':'')+r.weightDiff.toFixed(1)+' kg seit gestern</p>':'') +
+        (r.injection ? '<p>💉 Spritze vermerkt</p>' : '') +
         (r.newAchievements.length?r.newAchievements.map(function(a){ return '<div class="badge-pop">'+(a.major?'🏆':'⭐')+' Neu: '+a.title+'</div>'; }).join(''):'') +
         '<button class="cta-btn" style="margin-top:22px;" data-action="go-home">Fertig</button>' +
       '</div>'
@@ -799,7 +998,106 @@
         '<div class="bilanz-cell"><div class="bilanz-num">'+s.sugarFree+'<small>/'+s.total+'</small></div><div class="fs">Tage erfasst</div></div>' +
         '<div class="bilanz-cell"><div class="bilanz-num">'+s.best+'</div><div class="fs">beste Serie</div></div>' +
         '<div class="bilanz-cell"><div class="bilanz-num ' + (s.net!=null&&s.net<0?'good':'') + '">'+(s.net!=null?((s.net>0?'+':'')+s.net.toFixed(1)):'—')+'<small> kg</small></div><div class="fs">Netto-Gewicht</div></div>' +
-      '</div></div>';
+      '</div>' + extrasSectionHtml(from, to) + '</div>';
+  }
+
+  /* ---- Zusatz-Bilanz (nur für aktive Module) ---- */
+  function extraStats(from, to) {
+    var ds = sortedDates().filter(function(d){ return d >= from && d <= to; });
+    var res = { injections: 0, bool: {}, seDays: 0, seTracked: 0, seTop: [] };
+    BOOL_MODULES.forEach(function(k){ res.bool[k] = { yes: 0, tracked: 0 }; });
+    var agg = Object.create(null);
+    ds.forEach(function(d) {
+      var e = state.entries[d];
+      if (e.inj === true) res.injections++;
+      BOOL_MODULES.forEach(function(k) {
+        if (e[k] === true || e[k] === false) { res.bool[k].tracked++; if (e[k] === true) res.bool[k].yes++; }
+      });
+      if (e.se) {
+        res.seTracked++;
+        var names = Object.keys(e.se);
+        if (names.length) res.seDays++;
+        names.forEach(function(n) { var a = agg[n] || (agg[n] = { n: n, count: 0, sum: 0 }); a.count++; a.sum += e.se[n]; });
+      }
+    });
+    res.seTop = Object.keys(agg).map(function(k){ return agg[k]; })
+      .sort(function(a, b){ return b.count - a.count || b.sum - a.sum; }).slice(0, 5);
+    return res;
+  }
+  function levelWord(avg) { return avg < 1.5 ? 'leicht' : (avg < 2.5 ? 'mittel' : 'stark'); }
+
+  function extrasSectionHtml(from, to) {
+    if (!anyModuleOn()) return '';
+    var s = extraStats(from, to), cells = '', anyData = false;
+    function cell(num, label) { return '<div class="bilanz-cell"><div class="bilanz-num">' + num + '</div><div class="fs">' + label + '</div></div>'; }
+    BOOL_MODULES.forEach(function(k) {
+      if (!moduleOn(k)) return;
+      var o = s.bool[k], m = modInfo(k);
+      if (o.tracked) anyData = true;
+      cells += cell(o.tracked ? Math.round(o.yes / o.tracked * 100) + '<small>%</small>' : '—', m.ic + ' ' + m.label + (o.tracked ? ' (' + o.yes + '/' + o.tracked + ')' : ''));
+    });
+    if (moduleOn('injection')) {
+      if (s.injections) anyData = true;
+      cells += cell(s.injections, '💉 Spritzen');
+    }
+    if (moduleOn('sideEffects')) {
+      if (s.seTracked) anyData = true;
+      cells += cell(s.seTracked ? s.seDays + '<small>/' + s.seTracked + '</small>' : '—', '🤢 Tage mit Nebenwirkungen');
+    }
+    var html = '<div class="bilanz-sep"></div><div class="label" style="margin-bottom:12px;">Zusatzfelder</div>';
+    if (!anyData) return html + '<div class="fs">Noch keine Zusatz-Einträge in diesem Zeitraum.</div>';
+    html += '<div class="bilanz-grid">' + cells + '</div>';
+    if (moduleOn('sideEffects') && s.seTop.length) {
+      html += '<div class="se-top"><div class="fs" style="margin-bottom:6px;">Häufigste Nebenwirkungen</div>' +
+        s.seTop.map(function(a) { return '<span class="se-top-chip">' + esc(a.n) + ' · ' + a.count + '× <small>Ø ' + levelWord(a.sum / a.count) + '</small></span>'; }).join('') + '</div>';
+    }
+    return html;
+  }
+
+  /* ---- Zyklus-Auswertung: Nebenwirkungen nach Tagen seit der letzten Spritze ---- */
+  function cycleStats() {
+    var ds = sortedDates();
+    var injDates = ds.filter(function(d){ return state.entries[d].inj === true; });
+    var buckets = [];
+    for (var i = 0; i <= 7; i++) buckets.push({ days: 0, load: 0, withSe: 0, eff: Object.create(null) });
+    var tracked = 0;
+    ds.forEach(function(d) {
+      var e = state.entries[d]; if (!e.se) return;
+      var last = null;
+      for (var j = injDates.length - 1; j >= 0; j--) { if (injDates[j] <= d) { last = injDates[j]; break; } }
+      if (!last) return;
+      var k = Math.round((new Date(d + 'T00:00:00') - new Date(last + 'T00:00:00')) / 86400000);
+      if (k > 7) k = 7;
+      var b = buckets[k], names = Object.keys(e.se), load = 0;
+      b.days++; tracked++;
+      names.forEach(function(n){ load += e.se[n]; b.eff[n] = (b.eff[n] || 0) + 1; });
+      b.load += load; if (names.length) b.withSe++;
+    });
+    return { buckets: buckets, tracked: tracked, injections: injDates.length };
+  }
+
+  function cycleCardHtml() {
+    if (!(moduleOn('injection') && moduleOn('sideEffects'))) return '';
+    var c = cycleStats();
+    var head = '<div class="card"><div class="label" style="margin-bottom:4px;">Zyklus: Nebenwirkungen nach der Spritze</div>';
+    if (c.injections === 0 || c.tracked < 3) {
+      return head + '<div class="fs">Sobald Spritzen und Nebenwirkungen über ein paar Tage eingetragen sind, erscheint hier die Auswertung nach Tagen seit der Spritze.</div></div>';
+    }
+    var maxAvg = 0, peak = -1;
+    c.buckets.forEach(function(b, i) { if (b.days) { var a = b.load / b.days; if (a > maxAvg) { maxAvg = a; peak = i; } } });
+    var rows = c.buckets.map(function(b, i) {
+      if (!b.days) return '';
+      var avg = b.load / b.days;
+      var pct = maxAvg > 0 ? Math.round(avg / maxAvg * 100) : 0;
+      var top = Object.keys(b.eff).sort(function(x, y){ return b.eff[y] - b.eff[x]; })[0];
+      var label = i === 0 ? 'Spritztag' : (i === 7 ? 'Tag 7+' : 'Tag ' + i);
+      return '<div class="cyc-row"><div class="cyc-lbl">' + label + '</div>' +
+        '<div class="cyc-track"><div class="cyc-bar" style="width:' + pct + '%"></div></div>' +
+        '<div class="cyc-val">Ø ' + avg.toFixed(1) + '</div>' +
+        '<div class="cyc-eff">' + b.days + (b.days === 1 ? ' Tag' : ' Tage') + (top ? ' · häufigste: ' + esc(top) : ' · keine Nebenwirkungen') + '</div></div>';
+    }).join('');
+    var insight = (peak >= 0 && maxAvg > 0) ? '<div class="mile-card" style="margin:12px 0 4px;">Am stärksten zeigen sich Nebenwirkungen bei dir um ' + (peak === 0 ? 'den Spritztag' : (peak === 7 ? 'Tag 7 oder später' : 'Tag ' + peak + ' nach der Spritze')) + '.</div>' : '';
+    return head + '<div class="fs" style="margin-bottom:10px;">Ø Belastung pro Tag: Summe der Stärken (leicht 1, mittel 2, stark 3).</div>' + rows + insight + '</div>';
   }
 
   function renderBilanz() {
@@ -810,6 +1108,8 @@
     wrap.appendChild(el(summaryCard('Dieser Monat · ' + MONTHS_DE[m] + ' ' + y, mFrom, mTo)));
     wrap.appendChild(el(summaryCard('Dieses Jahr · ' + y, yFrom, yTo)));
     wrap.appendChild(el(summaryCard('Gesamt', '0000-01-01', '9999-12-31')));
+    var cyc = cycleCardHtml();
+    if (cyc) wrap.appendChild(el(cyc));
     return wrap;
   }
   /* Shared line chart with Y-axis labels. opts:
@@ -932,7 +1232,7 @@
     var wrap = document.createElement('div'), y = state.calYear, m = state.calMonth;
     wrap.appendChild(el(
       '<div class="card"><div class="cal-nav"><button data-action="cal-prev">‹</button><div class="month-label">'+MONTHS_DE[m]+' '+y+'</div><button data-action="cal-next">›</button></div>' +
-      '<div class="cal-grid" id="cal-grid"></div>' + LEGEND_HTML +
+      '<div class="cal-grid" id="cal-grid"></div>' + LEGEND_HTML + (moduleOn('injection') ? '<div class="fs" style="margin-top:8px;">💉 = Spritztag</div>' : '') +
       '<div class="fs" style="margin-top:12px;">Tipp: Tippe auf einen Tag, um ihn nachzutragen oder zu ändern.</div></div>'
     ));
     setTimeout(function() {
@@ -943,7 +1243,8 @@
       for (var day=1;day<=daysInMonth;day++) {
         var ds = fmtDate(new Date(y,m,day)), cls = 'cal-cell ' + cellClassFor(ds), tappable = ds <= today;
         var e = state.entries[ds], noteDot = (e && e.note) ? '<span class="note-dot"></span>' : '';
-        html += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'" style="cursor:pointer;"' : ' style="opacity:0.4;"') + '>'+day+noteDot+'</div>';
+        var injMark = (e && e.inj === true) ? '<span class="inj-mark">💉</span>' : '';
+        html += '<div class="'+cls+'"' + (tappable ? ' data-action="edit-day" data-val="'+ds+'" style="cursor:pointer;"' : ' style="opacity:0.4;"') + '>'+day+noteDot+injMark+'</div>';
       }
       grid.innerHTML = html;
     }, 0);
@@ -1059,6 +1360,29 @@
     var c = document.createElement('div'); c.className = 'ach-group'; c.appendChild(grid); return c;
   }
 
+  function zusatzSettingsHtml() {
+    var s = state.settings;
+    var html = '<div class="card"><div class="fs" style="margin-bottom:6px;">Optionale Felder für den Check-in und die Bilanz. Standardmäßig ausgeschaltet.</div>';
+    MODULES.forEach(function(m) {
+      var on = moduleOn(m.key);
+      html += '<div class="field-row mod-row"><div class="fl">' + m.ic + ' ' + m.label + '</div>' +
+        '<button class="switch ' + (on ? 'on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + m.label + '" data-action="toggle-mod" data-val="' + m.key + '"><span class="knob"></span></button></div>';
+      if (m.key === 'injection' && on) {
+        var days = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+        html += '<div class="mod-sub"><div class="fs" style="margin-bottom:8px;">Fester Spritztag — wird im Check-in automatisch vorgeschlagen:</div><div class="wd-row">' +
+          days.map(function(d, i) { return '<button class="wd-btn ' + (s.injectionWeekday === i ? 'active' : '') + '" data-action="inj-wd" data-val="' + i + '">' + d + '</button>'; }).join('') +
+          '</div></div>';
+      }
+      if (m.key === 'sideEffects' && on) {
+        html += '<div class="mod-sub"><div class="fs" style="margin-bottom:8px;">Deine Liste (Antippen im Check-in: leicht → mittel → stark):</div><div class="se-edit-wrap">' +
+          s.sideEffectList.map(function(n, i) { return '<span class="se-edit-chip">' + esc(n) + '<button data-action="se-del" data-val="' + i + '" aria-label="' + esc(n) + ' entfernen">✕</button></span>'; }).join('') +
+          '</div><div class="se-add"><input type="text" id="se-new" maxlength="30" placeholder="Neue Nebenwirkung"><button data-action="se-add">Hinzufügen</button></div></div>';
+      }
+    });
+    html += '<div class="fs" style="margin-top:10px;">Die App speichert nur deine Angaben und gibt keine medizinischen Hinweise. Besprich Auffälligkeiten mit deiner Ärztin bzw. deinem Arzt. Die Sicherungsdatei enthält diese Gesundheitsdaten.</div></div>';
+    return html;
+  }
+
   function renderSettings() {
     var wrap = document.createElement('div');
     wrap.appendChild(el('<div class="section-title" style="margin-top:0">Gewicht</div>'));
@@ -1066,6 +1390,8 @@
       '<div class="card"><div class="field-row"><div class="fl">Startgewicht</div><input type="number" step="0.1" id="set-start" value="'+state.settings.startWeight.toFixed(1)+'"></div>' +
       '<div class="field-row"><div class="fl">Zielgewicht</div><input type="number" step="0.1" id="set-target" value="'+(state.settings.targetWeight!=null?state.settings.targetWeight.toFixed(1):'')+'" placeholder="—"></div></div>'
     ));
+    wrap.appendChild(el('<div class="section-title">Zusatzfelder</div>'));
+    wrap.appendChild(el(zusatzSettingsHtml()));
     wrap.appendChild(el('<div class="section-title">Darstellung</div>'));
     var th = (state.settings.theme || 'auto');
     wrap.appendChild(el(
@@ -1137,17 +1463,50 @@
     else if (action === 'reset-data') { resetAllData(); }
     else if (action === 'export-data') { exportBackup(); }
     else if (action === 'import-data') { var fi = document.getElementById('import-file-input'); if (fi) fi.click(); }
+    else if (action === 'tg') { if (EXTRA_FIELDS.indexOf(val) > -1 && val !== 'se') { state.draft[val] = !state.draft[val]; syncCheckinUI(); } }
+    else if (action === 'se') {
+      var nm = state.draftSeNames[parseInt(val, 10)];
+      if (nm !== undefined) {
+        var cur = state.draft.se[nm] || 0, nx = (cur + 1) % 4;
+        if (nx === 0) delete state.draft.se[nm]; else state.draft.se[nm] = nx;
+        syncCheckinUI();
+      }
+    }
+    else if (action === 'toggle-mod') { if (modInfo(val)) { state.settings.modules[val] = !state.settings.modules[val]; persistSettings(); render(); } }
+    else if (action === 'inj-wd') { var wd = parseInt(val, 10); state.settings.injectionWeekday = (state.settings.injectionWeekday === wd) ? null : wd; persistSettings(); render(); }
+    else if (action === 'se-del') { var ix = parseInt(val, 10); if (ix >= 0 && ix < state.settings.sideEffectList.length) { state.settings.sideEffectList.splice(ix, 1); persistSettings(); render(); } }
+    else if (action === 'se-add') { addSideEffect(); }
+  });
+
+  function addSideEffect() {
+    var inp = document.getElementById('se-new'); if (!inp) return;
+    var name = inp.value.trim().slice(0, 30);
+    if (!name || name === '__proto__') return;
+    var list = state.settings.sideEffectList;
+    var dup = list.some(function(x){ return x.toLowerCase() === name.toLowerCase(); });
+    if (!dup) { list.push(name); persistSettings(); }
+    render();
+  }
+  document.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter' && ev.target && ev.target.id === 'se-new') { ev.preventDefault(); addSideEffect(); }
   });
 
   function saveEntry() {
     if (state.draft.sugarFree === null) return;
     var d = state.activeDate || todayStr();
     var prevWeight = referenceWeightFor(d);
-    state.entries[d] = { sugarFree: state.draft.sugarFree, mood: state.draft.mood, weight: state.draft.weight, note: (state.draft.note && state.draft.note.trim()) ? state.draft.note.trim() : null };
+    var prev = state.entries[d] || {};
+    var entry = { sugarFree: state.draft.sugarFree, mood: state.draft.mood, weight: state.draft.weight, note: (state.draft.note && state.draft.note.trim()) ? state.draft.note.trim() : null };
+    if (moduleOn('injection')) entry.inj = state.draft.inj === true; else if (prev.inj !== undefined) entry.inj = prev.inj;
+    if (moduleOn('sideEffects')) entry.se = cleanSe(state.draft.se); else if (prev.se !== undefined) entry.se = prev.se;
+    BOOL_MODULES.forEach(function(k) {
+      if (moduleOn(k)) entry[k] = state.draft[k] === true; else if (prev[k] !== undefined) entry[k] = prev[k];
+    });
+    state.entries[d] = entry;
     persistEntry(d);
     var newAch = computeAndUnlockAchievements();
     var streaks = computeStreaks();
-    state.lastResult = { sugarFree: state.draft.sugarFree, streak: streaks.current, weightDiff: (prevWeight!=null)?(state.draft.weight-prevWeight):null, newAchievements: newAch };
+    state.lastResult = { sugarFree: state.draft.sugarFree, streak: streaks.current, weightDiff: (prevWeight!=null)?(state.draft.weight-prevWeight):null, newAchievements: newAch, injection: (entry.inj === true) };
     state.view = 'result';
     render();
     var majors = newAch.filter(function(a){ return a.major; });
@@ -1184,7 +1543,8 @@
   }).then(function(res) {
     var settingsRec = res[0], entryRecs = res[1], achRecs = res[2];
     state.settings = settingsRec ? settingsRec.value : null;
-    entryRecs.forEach(function(r){ state.entries[r.date] = { sugarFree: r.sugarFree, mood: r.mood, weight: r.weight, note: r.note || null }; });
+    ensureSettingsDefaults();
+    entryRecs.forEach(function(r){ state.entries[r.date] = Object.assign({ sugarFree: r.sugarFree, mood: r.mood, weight: r.weight, note: r.note || null }, pickExtras(r)); });
     state.achievements = achRecs || [];
     applyTheme();
     render();
