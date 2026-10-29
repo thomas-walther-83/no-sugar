@@ -86,6 +86,8 @@
 
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; margin-bottom: 14px; }
   .stat-cell { background: var(--bg-elevated); padding: 16px 18px; }
+  .stat-cell:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .stat-cell small { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
   .stat-cell .label { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 4px; }
   .stat-cell .num { font-size: 1.6rem; font-weight: 600; }
   .stat-cell .num.fire { color: var(--accent-amber); }
@@ -224,6 +226,10 @@
   .se-dots { font-size: 0.6rem; letter-spacing: 2px; margin-top: 2px; }
   .inj-banner { background: var(--accent-green-soft); color: var(--accent-green); border-radius: 14px; padding: 14px 16px; font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; cursor: pointer; text-align: center; }
   .cal-cell .inj-mark { position: absolute; top: 1px; right: 2px; font-size: 0.5rem; line-height: 1; }
+  .ins-item { padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .ins-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .ins-txt { font-size: 0.92rem; line-height: 1.4; }
+  .ins-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; }
   .bilanz-sep { height: 1px; background: var(--border); margin: 18px 0 14px; }
   .se-top { margin-top: 14px; }
   .se-top-chip { display: inline-block; margin: 0 6px 6px 0; padding: 5px 11px; border-radius: 14px; background: var(--bg-sunken); border: 1px solid var(--border); font-size: 0.8rem; }
@@ -377,6 +383,7 @@
     achievements: [],
     view: 'home',
     progressTab: 'weight',
+    analysisTab: 'bilanz',
     weightRange: 30,
     sugarView: 'month',   // month | quarter | year
     moodRange: 30,
@@ -436,6 +443,7 @@
     MODULES.forEach(function(m) { if (typeof s.modules[m.key] !== 'boolean') s.modules[m.key] = false; });
     if (typeof s.injectionWeekday !== 'number') s.injectionWeekday = null;   // 0 = Mo … 6 = So
     if (!Array.isArray(s.sideEffectList)) s.sideEffectList = DEFAULT_SIDE_EFFECTS.slice();
+    if (!Array.isArray(s.homeStats)) s.homeStats = ['streak', 'best', 'total'];
   }
   function moduleOn(key) { return !!(state.settings && state.settings.modules && state.settings.modules[key]); }
   function anyModuleOn() { return MODULES.some(function(m) { return moduleOn(m.key); }); }
@@ -688,6 +696,7 @@
     else if (state.view === 'checkin') main.appendChild(renderCheckin());
     else if (state.view === 'result') main.appendChild(renderResult());
     else if (state.view === 'progress') main.appendChild(renderProgress());
+    else if (state.view === 'analysen') main.appendChild(renderAnalysen());
     else if (state.view === 'achievements') main.appendChild(renderAchievements());
     else if (state.view === 'settings') main.appendChild(renderSettings());
     app.appendChild(main);
@@ -768,14 +777,13 @@
       ));
     }
 
-    wrap.appendChild(el(
-      '<div class="stat-grid">' +
-        '<div class="stat-cell"><div class="label">Aktuelle Serie</div><div class="num fire">🔥 <span id="streak-num">' + streaks.current + '</span>' + (streaks.current===1?' Tag':' Tage') + '</div></div>' +
-        '<div class="stat-cell"><div class="label">Beste Serie</div><div class="num">' + streaks.best + (streaks.best===1?' Tag':' Tage') + '</div></div>' +
-        '<div class="stat-cell"><div class="label">Zuckerfreie Tage total</div><div class="num">' + streaks.totalSugarFree + '</div></div>' +
-        '<div class="stat-cell"><div class="label">Punkte</div><div class="num">' + computePoints() + '</div></div>' +
-      '</div>'
-    ));
+    var ctx = { st: streaks, wk: weeklyReview(), diffStart: diffStart };
+    var chosen = availableStats().filter(function(h){ return state.settings.homeStats.indexOf(h.key) > -1; });
+    if (chosen.length) {
+      wrap.appendChild(el('<div class="stat-grid">' + chosen.map(function(h) {
+        return '<div class="stat-cell"><div class="label">' + h.label + '</div><div class="num ' + (h.cls || '') + '">' + h.val(ctx) + '</div></div>';
+      }).join('') + '</div>'));
+    }
 
     // Milestone preview / restart encouragement
     var mile = nextStreakMilestone(streaks.current);
@@ -951,6 +959,202 @@
     return wrap;
   }
 
+  /* ==========================================================
+     ANALYSEN (eigener Tab): Bilanz · Zusammenhänge · Zyklus
+     Alles lokal berechnet. Zusammenhänge sind Beobachtungen, keine Ursachen.
+     ========================================================== */
+  var MIN_ENTRIES = 14, MIN_GROUP = 5;
+  function fmtNum(x, dec) { return x.toFixed(dec).replace('.', ','); }
+  function meanOf(a) { var s = 0; a.forEach(function(v){ s += v; }); return a.length ? s / a.length : 0; }
+  function sdOf(a) { if (a.length < 2) return 0; var m = meanOf(a), s = 0; a.forEach(function(v){ s += (v - m) * (v - m); }); return Math.sqrt(s / (a.length - 1)); }
+  function dayDiff(a, b) { return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000); }
+
+  var FACTORS = [
+    { key:'sf',       yes:'zuckerfreien Tagen',            no:'Tagen mit Zucker',                 get:function(e){ return (e.sugarFree === true || e.sugarFree === false) ? e.sugarFree : undefined; } },
+    { key:'healthy',  yes:'Tagen mit gesundem Essen',      no:'Tagen ohne bewusst gesundes Essen', get:function(e){ return typeof e.healthy === 'boolean' ? e.healthy : undefined; } },
+    { key:'water',    yes:'Tagen mit 2–3 Litern Trinken',  no:'Tagen mit weniger Trinken',        get:function(e){ return typeof e.water === 'boolean' ? e.water : undefined; } },
+    { key:'exercise', yes:'Tagen mit Bewegung',            no:'Tagen ohne Bewegung',              get:function(e){ return typeof e.exercise === 'boolean' ? e.exercise : undefined; } },
+    { key:'sleep',    yes:'Tagen mit gutem Schlaf',        no:'Tagen mit weniger gutem Schlaf',   get:function(e){ return typeof e.sleep === 'boolean' ? e.sleep : undefined; } },
+    { key:'inj',      yes:'Spritztagen',                   no:'anderen Tagen',                    get:function(e){ return typeof e.inj === 'boolean' ? e.inj : undefined; } }
+  ];
+  var OUTCOMES = [
+    { key:'mood',  noun:'die Stimmung', unit:'Punkte', dec:1, minDiff:0.3, up:'höher', down:'niedriger' },
+    { key:'wchg',  noun:'die Gewichtsveränderung pro Tag', unit:'kg', dec:2, minDiff:0.05, up:'höher', down:'niedriger' },
+    { key:'load',  noun:'die Nebenwirkungs-Belastung', unit:'Punkte', dec:1, minDiff:0.5, up:'höher', down:'niedriger' }
+  ];
+
+  // Ergebniswerte pro Tag
+  function outcomeSeries() {
+    var ds = sortedDates(), out = { mood:{}, wchg:{}, load:{} }, lastW = null, lastWd = null;
+    ds.forEach(function(d) {
+      var e = state.entries[d];
+      if (typeof e.mood === 'number') out.mood[d] = e.mood;
+      if (e.se && typeof e.se === 'object') { var l = 0; Object.keys(e.se).forEach(function(k){ l += e.se[k]; }); out.load[d] = l; }
+      if (typeof e.weight === 'number') {
+        if (lastW !== null) { var gap = dayDiff(lastWd, d); if (gap >= 1 && gap <= 3) out.wchg[d] = (e.weight - lastW) / gap; }
+        lastW = e.weight; lastWd = d;
+      }
+    });
+    return out;
+  }
+
+  function buildInsights() {
+    var ds = sortedDates(), series = outcomeSeries(), found = [];
+    FACTORS.forEach(function(f) {
+      [0, 1].forEach(function(lag) {
+        OUTCOMES.forEach(function(o) {
+          var yes = [], no = [];
+          ds.forEach(function(d) {
+            var ov = series[o.key][d]; if (ov === undefined) return;
+            var fd = lag === 0 ? d : addDays(d, -1), fe = state.entries[fd]; if (!fe) return;
+            var fv = f.get(fe); if (fv === undefined) return;
+            (fv ? yes : no).push(ov);
+          });
+          if (yes.length < MIN_GROUP || no.length < MIN_GROUP) return;
+          var diff = meanOf(yes) - meanOf(no);
+          var pooled = Math.sqrt(((yes.length - 1) * Math.pow(sdOf(yes), 2) + (no.length - 1) * Math.pow(sdOf(no), 2)) / (yes.length + no.length - 2));
+          if (!pooled) return;
+          var dEff = diff / pooled;
+          if (Math.abs(dEff) < (lag === 0 ? 0.5 : 0.65) || Math.abs(diff) < o.minDiff) return;
+          found.push({ f: f, o: o, lag: lag, diff: diff, d: dEff, n1: yes.length, n2: no.length });
+        });
+      });
+    });
+    found.sort(function(a, b) { return Math.abs(b.d) - Math.abs(a.d); });
+    return found;
+  }
+
+  function insightText(it) {
+    var strength = Math.abs(it.d) >= 0.8 ? 'deutlich' : (Math.abs(it.d) >= 0.5 ? 'spürbar' : 'leicht');
+    var amt = fmtNum(Math.abs(it.diff), it.o.dec) + ' ' + it.o.unit;
+    var dir = it.diff > 0 ? it.o.up : it.o.down;
+    var lead = it.lag === 0 ? 'An ' + it.f.yes : 'Nach ' + it.f.yes;
+    var vs = it.lag === 0 ? 'an ' + it.f.no : 'nach ' + it.f.no;
+    var cap = it.o.noun.charAt(0).toUpperCase() + it.o.noun.slice(1);
+    return { title: lead + ' ist ' + it.o.noun + ' im Schnitt um ' + amt + ' ' + dir + ' als ' + vs + '.',
+             meta: strength + ' · ' + it.n1 + ' vs. ' + it.n2 + ' Tage' };
+  }
+
+  function weekdayPattern() {
+    var rows = [];
+    for (var i = 0; i < 7; i++) rows.push({ n: 0, sf: 0, moods: [] });
+    sortedDates().forEach(function(d) {
+      var e = state.entries[d], r = rows[weekdayIdx(d)];
+      r.n++; if (e.sugarFree === true) r.sf++;
+      if (typeof e.mood === 'number') r.moods.push(e.mood);
+    });
+    return rows;
+  }
+
+  function reentryStats() {
+    var ds = sortedDates(), afterNo = { n: 0, yes: 0 }, afterYes = { n: 0, yes: 0 };
+    ds.forEach(function(d) {
+      var e = state.entries[d], nx = state.entries[addDays(d, 1)];
+      if (!nx || (e.sugarFree !== true && e.sugarFree !== false)) return;
+      var b = e.sugarFree ? afterYes : afterNo;
+      b.n++; if (nx.sugarFree === true) b.yes++;
+    });
+    return { afterNo: afterNo, afterYes: afterYes };
+  }
+
+  function trendInfo() {
+    var t = todayStr(), from = addDays(t, -27), pts = [];
+    sortedDates().forEach(function(d) { var e = state.entries[d]; if (d >= from && d <= t && typeof e.weight === 'number') pts.push({ x: dayDiff(from, d), y: e.weight }); });
+    var res = { slope: null, moodNow: null, moodBefore: null };
+    if (pts.length >= 4 && pts[pts.length-1].x - pts[0].x >= 10) {
+      var mx = meanOf(pts.map(function(p){return p.x;})), my = meanOf(pts.map(function(p){return p.y;})), num = 0, den = 0;
+      pts.forEach(function(p){ num += (p.x - mx) * (p.y - my); den += (p.x - mx) * (p.x - mx); });
+      if (den) res.slope = num / den * 7;
+    }
+    var m1 = [], m2 = [];
+    sortedDates().forEach(function(d) {
+      var e = state.entries[d]; if (typeof e.mood !== 'number') return;
+      if (d > addDays(t, -14) && d <= t) m1.push(e.mood); else if (d > addDays(t, -28) && d <= addDays(t, -14)) m2.push(e.mood);
+    });
+    if (m1.length >= 4) res.moodNow = meanOf(m1);
+    if (m2.length >= 4) res.moodBefore = meanOf(m2);
+    return res;
+  }
+
+  function renderInsights() {
+    var wrap = document.createElement('div'), n = sortedDates().length;
+    if (n < MIN_ENTRIES) {
+      wrap.appendChild(el('<div class="card"><div class="label" style="margin-bottom:6px;">Zusammenhänge</div>' +
+        '<div class="fs">Sobald du ' + MIN_ENTRIES + ' Tage erfasst hast, sucht die App hier nach Mustern zwischen Zuckerverzicht, Stimmung, Gewicht und deinen Zusatzfeldern. Aktuell: ' + n + ' von ' + MIN_ENTRIES + ' Tagen.</div>' +
+        '<div class="cyc-track" style="margin-top:12px;"><div class="cyc-bar" style="width:' + Math.round(n / MIN_ENTRIES * 100) + '%;background:var(--accent-green)"></div></div></div>'));
+      return wrap;
+    }
+    var found = buildInsights();
+    var html = '<div class="card"><div class="label" style="margin-bottom:6px;">Auffälligkeiten</div>' +
+      '<div class="fs" style="margin-bottom:12px;">Verglichen werden Tage mit und ohne ein Merkmal (' + n + ' Tage Datenbasis). Das sind Beobachtungen aus deinen Daten, keine Ursachen — bei vielen Vergleichen kann auch der Zufall mitspielen.</div>';
+    if (!found.length) {
+      html += '<div class="fs">Noch keine klaren Muster erkennbar. Mit mehr Einträgen — und aktivierten Zusatzfeldern — werden die Aussagen aussagekräftiger.</div>';
+    } else {
+      html += found.slice(0, 6).map(function(it) {
+        var t = insightText(it);
+        return '<div class="ins-item"><div class="ins-txt">' + t.title + '</div><div class="ins-meta">' + t.meta + '</div></div>';
+      }).join('');
+    }
+    html += '</div>';
+    wrap.appendChild(el(html));
+
+    // Trend
+    var tr = trendInfo(), tl = '';
+    if (tr.slope !== null) tl += '<div class="ins-item"><div class="ins-txt">Gewichtstrend der letzten 4 Wochen: <b>' + (tr.slope > 0 ? '+' : '−') + fmtNum(Math.abs(tr.slope), 2) + ' kg pro Woche</b></div></div>';
+    if (tr.moodNow !== null && tr.moodBefore !== null) {
+      var dm = tr.moodNow - tr.moodBefore;
+      tl += '<div class="ins-item"><div class="ins-txt">Stimmung: Ø ' + fmtNum(tr.moodNow, 1) + ' in den letzten 14 Tagen' +
+        (Math.abs(dm) >= 0.2 ? ' (' + (dm > 0 ? 'höher' : 'niedriger') + ' als die 14 Tage davor: Ø ' + fmtNum(tr.moodBefore, 1) + ')' : ' — ähnlich wie in den 14 Tagen davor') + '</div></div>';
+    }
+    if (tl) wrap.appendChild(el('<div class="card"><div class="label" style="margin-bottom:8px;">Trends</div>' + tl + '</div>'));
+
+    // Wiedereinstieg
+    var re = reentryStats();
+    if (re.afterNo.n >= 3) {
+      var pNo = Math.round(re.afterNo.yes / re.afterNo.n * 100);
+      var txt = 'Nach einem Tag mit Zucker warst du am nächsten Tag in <b>' + re.afterNo.yes + ' von ' + re.afterNo.n + '</b> Fällen (' + pNo + ' %) wieder zuckerfrei.';
+      if (re.afterYes.n >= 3) txt += ' Nach einem zuckerfreien Tag: ' + Math.round(re.afterYes.yes / re.afterYes.n * 100) + ' %.';
+      wrap.appendChild(el('<div class="card"><div class="label" style="margin-bottom:8px;">Wiedereinstieg</div><div class="ins-txt">' + txt + '</div></div>'));
+    }
+
+    // Wochentage
+    var rows = weekdayPattern(), days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+    var rowsHtml = rows.map(function(r, i) {
+      if (!r.n) return '';
+      var pct = Math.round(r.sf / r.n * 100);
+      var mood = r.moods.length ? ' · Stimmung Ø ' + fmtNum(meanOf(r.moods), 1) : '';
+      return '<div class="cyc-row"><div class="cyc-lbl">' + days[i].slice(0, 2) + '</div><div class="cyc-track"><div class="cyc-bar" style="width:' + pct + '%;background:var(--accent-green)"></div></div><div class="cyc-val">' + pct + ' %</div><div class="cyc-eff">' + r.n + ' Tage' + mood + '</div></div>';
+    }).join('');
+    var okRows = rows.map(function(r, i){ return { i:i, r:r }; }).filter(function(x){ return x.r.n >= 3; });
+    var hint = '';
+    if (okRows.length >= 3) {
+      var best = okRows.slice().sort(function(a, b){ return b.r.sf / b.r.n - a.r.sf / a.r.n; })[0];
+      var low = okRows.slice().sort(function(a, b){ return a.r.sf / a.r.n - b.r.sf / b.r.n; })[0];
+      if (best.i !== low.i && best.r.sf / best.r.n - low.r.sf / low.r.n >= 0.2)
+        hint = '<div class="mile-card" style="margin:12px 0 0;">Am leichtesten fällt dir der ' + days[best.i] + ', am anspruchsvollsten ist der ' + days[low.i] + '.</div>';
+    }
+    wrap.appendChild(el('<div class="card"><div class="label" style="margin-bottom:4px;">Wochentage</div><div class="fs" style="margin-bottom:10px;">Anteil zuckerfreier Tage pro Wochentag.</div>' + rowsHtml + hint + '</div>'));
+    return wrap;
+  }
+
+  function cycleAvailable() { return moduleOn('injection') && moduleOn('sideEffects'); }
+
+  function renderAnalysen() {
+    var wrap = document.createElement('div');
+    if (state.analysisTab === 'cycle' && !cycleAvailable()) state.analysisTab = 'bilanz';
+    var tabs = [ ['bilanz', 'Bilanz'], ['insights', 'Zusammenhänge'] ];
+    if (cycleAvailable()) tabs.push(['cycle', 'Zyklus']);
+    wrap.appendChild(el('<div class="tab-row">' + tabs.map(function(t) {
+      return '<button class="tab-btn ' + (state.analysisTab === t[0] ? 'active' : '') + '" data-action="atab" data-val="' + t[0] + '">' + t[1] + '</button>';
+    }).join('') + '</div>'));
+    var body = document.createElement('div');
+    if (state.analysisTab === 'insights') body.appendChild(renderInsights());
+    else if (state.analysisTab === 'cycle') { var c = cycleCardHtml(); if (c) body.appendChild(el(c)); }
+    else body.appendChild(renderBilanz());
+    wrap.appendChild(body);
+    return wrap;
+  }
+
   function renderProgress() {
     var wrap = document.createElement('div');
     wrap.appendChild(el(
@@ -958,14 +1162,12 @@
         '<button class="tab-btn ' + (state.progressTab==='weight'?'active':'') + '" data-action="ptab" data-val="weight">Gewicht</button>' +
         '<button class="tab-btn ' + (state.progressTab==='calendar'?'active':'') + '" data-action="ptab" data-val="calendar">Zuckerfrei</button>' +
         '<button class="tab-btn ' + (state.progressTab==='mood'?'active':'') + '" data-action="ptab" data-val="mood">Stimmung</button>' +
-        '<button class="tab-btn ' + (state.progressTab==='bilanz'?'active':'') + '" data-action="ptab" data-val="bilanz">Bilanz</button>' +
       '</div>'
     ));
     var body = document.createElement('div');
     if (state.progressTab === 'weight') body.appendChild(renderWeightChart());
     else if (state.progressTab === 'calendar') body.appendChild(renderCalendar());
-    else if (state.progressTab === 'mood') body.appendChild(renderMoodTimeline());
-    else body.appendChild(renderBilanz());
+    else body.appendChild(renderMoodTimeline());
     wrap.appendChild(body);
     return wrap;
   }
@@ -1108,8 +1310,6 @@
     wrap.appendChild(el(summaryCard('Dieser Monat · ' + MONTHS_DE[m] + ' ' + y, mFrom, mTo)));
     wrap.appendChild(el(summaryCard('Dieses Jahr · ' + y, yFrom, yTo)));
     wrap.appendChild(el(summaryCard('Gesamt', '0000-01-01', '9999-12-31')));
-    var cyc = cycleCardHtml();
-    if (cyc) wrap.appendChild(el(cyc));
     return wrap;
   }
   /* Shared line chart with Y-axis labels. opts:
@@ -1360,6 +1560,31 @@
     var c = document.createElement('div'); c.className = 'ach-group'; c.appendChild(grid); return c;
   }
 
+  /* ---- Wählbare Kennzahlen auf der Startseite ---- */
+  function rate7(field) {
+    var t = todayStr(), yes = 0, n = 0;
+    for (var i = 0; i < 7; i++) { var e = state.entries[addDays(t, -i)]; if (e && (e[field] === true || e[field] === false)) { n++; if (e[field] === true) yes++; } }
+    return n ? yes + '<small>/' + n + '</small>' : '—';
+  }
+  var HOME_STATS = [
+    { key:'streak', label:'Aktuelle Serie', cls:'fire', val:function(c){ return '🔥 <span id="streak-num">' + c.st.current + '</span> ' + (c.st.current===1?'Tag':'Tage'); } },
+    { key:'best',   label:'Beste Serie', val:function(c){ return c.st.best + ' ' + (c.st.best===1?'Tag':'Tage'); } },
+    { key:'total',  label:'Zuckerfreie Tage total', val:function(c){ return c.st.totalSugarFree; } },
+    { key:'week',   label:'Zuckerfrei (7 Tage)', val:function(c){ return c.wk.entries ? c.wk.sugarFree + '<small>/7</small>' : '—'; } },
+    { key:'wdelta', label:'Gewicht seit Start', val:function(c){ return c.diffStart != null ? (c.diffStart>0?'+':'') + c.diffStart.toFixed(1) + '<small> kg</small>' : '—'; } },
+    { key:'wweek',  label:'Gewicht (7 Tage)', val:function(c){ return c.wk.weightDiff != null ? (c.wk.weightDiff>0?'+':'') + c.wk.weightDiff.toFixed(1) + '<small> kg</small>' : '—'; } },
+    { key:'healthy',  mod:'healthy',  label:'🥗 Gesund gegessen (7 Tage)', val:function(){ return rate7('healthy'); } },
+    { key:'water',    mod:'water',    label:'💧 2–3 Liter (7 Tage)', val:function(){ return rate7('water'); } },
+    { key:'exercise', mod:'exercise', label:'🏃 Bewegung (7 Tage)', val:function(){ return rate7('exercise'); } },
+    { key:'sleep',    mod:'sleep',    label:'😴 Gut geschlafen (7 Tage)', val:function(){ return rate7('sleep'); } },
+    { key:'lastinj',  mod:'injection', label:'💉 Letzte Spritze', val:function(){
+        var t = todayStr(), ds = sortedDates().filter(function(d){ return state.entries[d].inj === true && d <= t; });
+        if (!ds.length) return '—';
+        var n = Math.round((new Date(t+'T00:00:00') - new Date(ds[ds.length-1]+'T00:00:00')) / 86400000);
+        return n === 0 ? 'heute' : 'vor ' + n + (n===1?' Tag':' Tagen'); } }
+  ];
+  function availableStats() { return HOME_STATS.filter(function(h){ return !h.mod || moduleOn(h.mod); }); }
+
   function zusatzSettingsHtml() {
     var s = state.settings;
     var html = '<div class="card"><div class="fs" style="margin-bottom:6px;">Optionale Felder für den Check-in und die Bilanz. Standardmäßig ausgeschaltet.</div>';
@@ -1390,6 +1615,12 @@
       '<div class="card"><div class="field-row"><div class="fl">Startgewicht</div><input type="number" step="0.1" id="set-start" value="'+state.settings.startWeight.toFixed(1)+'"></div>' +
       '<div class="field-row"><div class="fl">Zielgewicht</div><input type="number" step="0.1" id="set-target" value="'+(state.settings.targetWeight!=null?state.settings.targetWeight.toFixed(1):'')+'" placeholder="—"></div></div>'
     ));
+    wrap.appendChild(el('<div class="section-title">Startseite</div>'));
+    wrap.appendChild(el('<div class="card"><div class="fs" style="margin-bottom:6px;">Welche Kennzahlen sollen auf der Startseite stehen?</div>' +
+      availableStats().map(function(h) {
+        var on = state.settings.homeStats.indexOf(h.key) > -1;
+        return '<div class="field-row mod-row"><div class="fl">' + h.label + '</div><button class="switch ' + (on?'on':'') + '" role="switch" aria-checked="' + on + '" aria-label="' + h.label + '" data-action="toggle-stat" data-val="' + h.key + '"><span class="knob"></span></button></div>';
+      }).join('') + '</div>'));
     wrap.appendChild(el('<div class="section-title">Zusatzfelder</div>'));
     wrap.appendChild(el(zusatzSettingsHtml()));
     wrap.appendChild(el('<div class="section-title">Darstellung</div>'));
@@ -1430,7 +1661,7 @@
   }
 
   function renderNav() {
-    var items = [ {v:'home',ic:'🏠',l:'Home'}, {v:'progress',ic:'📈',l:'Verlauf'}, {v:'achievements',ic:'🏅',l:'Erfolge'}, {v:'settings',ic:'⚙️',l:'Mehr'} ];
+    var items = [ {v:'home',ic:'🏠',l:'Home'}, {v:'progress',ic:'📈',l:'Verlauf'}, {v:'analysen',ic:'💡',l:'Analysen'}, {v:'achievements',ic:'🏅',l:'Erfolge'}, {v:'settings',ic:'⚙️',l:'Mehr'} ];
     return el('<nav class="tabbar">' + items.map(function(i) {
       var active = (state.view===i.v) || ((state.view==='checkin'||state.view==='result') && i.v==='home');
       return '<button class="nav-btn '+(active?'active':'')+'" data-action="nav" data-val="'+i.v+'"><span class="ic">'+i.ic+'</span>'+i.l+'</button>';
@@ -1452,6 +1683,7 @@
     else if (action === 'w-minus') { state.draft.weight = Math.round((state.draft.weight-0.1)*10)/10; syncCheckinUI(); }
     else if (action === 'w-plus') { state.draft.weight = Math.round((state.draft.weight+0.1)*10)/10; syncCheckinUI(); }
     else if (action === 'save-entry') { saveEntry(); }
+    else if (action === 'atab') { state.analysisTab = val; render(); }
     else if (action === 'ptab') { state.progressTab = val; render(); }
     else if (action === 'sview') { state.sugarView = val; render(); }
     else if (action === 'mrange') { state.moodRange = (val==='all')?'all':parseInt(val,10); render(); }
@@ -1473,6 +1705,7 @@
       }
     }
     else if (action === 'toggle-mod') { if (modInfo(val)) { state.settings.modules[val] = !state.settings.modules[val]; persistSettings(); render(); } }
+    else if (action === 'toggle-stat') { var hs = state.settings.homeStats, hi = hs.indexOf(val); if (hi > -1) hs.splice(hi, 1); else hs.push(val); persistSettings(); render(); }
     else if (action === 'inj-wd') { var wd = parseInt(val, 10); state.settings.injectionWeekday = (state.settings.injectionWeekday === wd) ? null : wd; persistSettings(); render(); }
     else if (action === 'se-del') { var ix = parseInt(val, 10); if (ix >= 0 && ix < state.settings.sideEffectList.length) { state.settings.sideEffectList.splice(ix, 1); persistSettings(); render(); } }
     else if (action === 'se-add') { addSideEffect(); }
